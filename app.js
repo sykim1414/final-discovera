@@ -12,6 +12,7 @@ let selectedFilter='전체';
 document.querySelectorAll('.filter-row button').forEach(button=>button.addEventListener('click',()=>{selectedFilter=button.dataset.filter;document.querySelectorAll('.filter-row button').forEach(b=>b.classList.remove('active'));button.classList.add('active');renderRecommendations(selectedFilter);toast.textContent=`${button.textContent} 테마에 맞는 장소를 찾았어요`;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800);}));
 let selectedDuration='half';
 let selectedRegion='oldtown';
+let requestedSpot=null;
 
 const routeRegions={
  oldtown:{label:'원도심',title:'부산 원도심의 골목과 시장',districts:'중구 · 동구',stops:[['용두산공원·부산타워','부산항을 내려다보는 전망'],['국제시장','로컬 먹거리와 시장 탐방'],['초량 이바구길','근현대 골목 산책'],['부산항 북항','항구 야경과 산책'],['보수동책방골목','책방에서 쉬어가기']]},
@@ -27,17 +28,26 @@ const durationPlans={
  day:{label:'하루',meta:'약 8시간 · 도보+대중교통',description:'낮부터 야경까지, 명소와 지역 상권을 함께 만나는 하루 코스',count:4,times:['10:00','11:40','14:10','16:40']},
  stay:{label:'1박 2일',meta:'1박 2일 · 대중교통+도보',description:'첫날은 대표 명소, 다음 날은 숨은 공간까지 여유 있게 잇는 여행',count:5,times:['1일차 10:00','1일차 12:00','1일차 15:00','1일차 18:00','2일차 10:30']}
 };
+const districtRouteRegion={중구:'oldtown',동구:'oldtown',서구:'west',사하구:'west',영도구:'yeongdo',부산진구:'urban',동래구:'urban',연제구:'urban',남구:'south',수영구:'south',북구:'river',사상구:'river',강서구:'river',해운대구:'east',금정구:'east',기장군:'east'};
+function createCourseForSpot(spot){
+ requestedSpot=spot;selectedRegion=districtRouteRegion[spot.district]||'oldtown';
+ document.querySelectorAll('.route-area-row button').forEach(button=>button.classList.toggle('active',button.dataset.region===selectedRegion));
+ renderCourse();move('course');
+}
 function routeCrowd(name){const spot=touristSpots.find(item=>item.name===name);return spot?`혼잡도 ${spot.crowd}% · ${spot.crowd>=70?'혼잡':spot.crowd>=40?'보통':'여유'}`:'AI 추천 · 지역 체험';}
 function renderCourse(){
  const plan=durationPlans[selectedDuration];
  const region=routeRegions[selectedRegion];
- const stops=region.stops.slice(0,plan.count);
- document.querySelector('#courseCard').innerHTML=`<div class="course-top"><span>${plan.label} AI 추천 코스 · ${region.label}</span><b>${plan.meta}</b></div><h2>${region.title}</h2><p>${plan.description}<br />${region.districts} 명소를 중심으로 구성했어요.</p><ol>${stops.map((stop,index)=>`<li><time>${plan.times[index]}</time><i class="timeline-dot" aria-hidden="true"></i><span><b>${stop[0]}</b><small>${routeCrowd(stop[0])} · ${stop[1]}</small></span></li>`).join('')}</ol><button class="primary route-start">이 코스로 여행 시작하기</button></article>`;
+ const routeStops=requestedSpot?[[requestedSpot.name,'선택한 명소 · 이곳에서 여행 시작'],...region.stops.filter(stop=>stop[0]!==requestedSpot.name)]:region.stops;
+ const stops=routeStops.slice(0,plan.count);
+ const title=requestedSpot?`${requestedSpot.name}을(를) 담은 ${region.label} 코스`:region.title;
+ const description=requestedSpot?`선택한 ${requestedSpot.name}을(를) 첫 방문지로 넣고, 가까운 명소를 이어 드려요.`:plan.description;
+ document.querySelector('#courseCard').innerHTML=`<div class="course-top"><span>${plan.label} AI 추천 코스 · ${region.label}</span><b>${plan.meta}</b></div><h2>${title}</h2><p>${description}<br />${region.districts} 명소를 중심으로 구성했어요.</p><ol>${stops.map((stop,index)=>`<li><time>${plan.times[index]}</time><i class="timeline-dot" aria-hidden="true"></i><span><b>${stop[0]}</b><small>${routeCrowd(stop[0])} · ${stop[1]}</small></span></li>`).join('')}</ol><button class="primary route-start">이 코스로 여행 시작하기</button></article>`;
  document.querySelector('.route-start').addEventListener('click',()=>move('stamp'));
 }
 document.querySelectorAll('.course-switch button').forEach(button=>button.addEventListener('click',()=>{selectedDuration=button.dataset.duration;document.querySelectorAll('.course-switch button').forEach(b=>b.classList.toggle('active',b===button));renderCourse();}));
-document.querySelectorAll('.route-area-row button').forEach(button=>button.addEventListener('click',()=>{selectedRegion=button.dataset.region;document.querySelectorAll('.route-area-row button').forEach(b=>b.classList.toggle('active',b===button));renderCourse();}));
-document.querySelector('.course-btn').addEventListener('click',()=>move('course'));
+document.querySelectorAll('.route-area-row button').forEach(button=>button.addEventListener('click',()=>{selectedRegion=button.dataset.region;requestedSpot=null;document.querySelectorAll('.route-area-row button').forEach(b=>b.classList.toggle('active',b===button));renderCourse();}));
+document.querySelector('.course-btn').addEventListener('click',()=>{const spot=touristSpots.find(item=>item.name===document.querySelector('.course-btn').dataset.course);if(spot)createCourseForSpot(spot);else move('course');});
 
 // 부산 실제 지도를 기준으로 선정한 32개 관광지를 표시합니다.
 // 운영 환경에서는 /api/crowd가 통신사·교통·주차·날씨 데이터를 합산한
@@ -152,7 +162,7 @@ function openSpotDetail(spot){
 function closeSpotDetail(){document.querySelector('#spotDetailPanel').hidden=true;}
 document.querySelector('#closeSpotDetail').addEventListener('click',closeSpotDetail);
 document.querySelector('#detailMapButton').addEventListener('click',()=>{if(activeDetailSpot){closeSpotDetail();move('map');openSpot(activeDetailSpot);crowdMap&&crowdMap.setView([activeDetailSpot.lat,activeDetailSpot.lng],14);}});
-document.querySelector('#detailCourseButton').addEventListener('click',()=>{closeSpotDetail();move('course');showToast(`${activeDetailSpot.name}을(를) 포함한 코스를 살펴보세요.`);});
+document.querySelector('#detailCourseButton').addEventListener('click',()=>{if(activeDetailSpot){closeSpotDetail();createCourseForSpot(activeDetailSpot);showToast(`${activeDetailSpot.name}을(를) 포함한 코스를 만들었어요.`);}});
 document.querySelector('#featuredRecommendation').addEventListener('click',event=>{if(!event.target.closest('button'))openSpotDetail(touristSpots.find(spot=>spot.id===event.currentTarget.dataset.spotId));});
 
 let crowdMap, spotMarkers=[];
