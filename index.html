@@ -69,15 +69,19 @@
     <section class="page" id="recommend">
       <div class="page-heading compact"><p class="eyebrow">PERSONAL AI PICK</p><h1>나를 위한 부산 여행</h1><p>혼잡도, 취향, 이동 시간을 반영했어요.</p></div>
       <div class="filter-row"><button class="active" data-filter="전체">전체</button><button data-filter="자연·산책">자연·산책</button><button data-filter="문화·전시">문화·전시</button><button data-filter="맛집·시장">맛집·시장</button></div>
-      <article class="place-card featured"><div class="place-art art-yeongdo"><span>◒</span></div><div class="place-copy"><div><span class="pill calm">혼잡도 24% · 여유</span><button class="heart">♡</button></div><h2>흰여울문화마을</h2><p>영도구 · 바다 산책과 감성 골목</p><div class="tags"><span>#오션뷰</span><span>#산책</span><span>#로컬카페</span></div><button class="outline course-btn" data-course="흰여울문화마을">이곳으로 코스 만들기 →</button></div></article>
+      <article class="place-card featured"><div class="place-art art-yeongdo"><img src="assets/huinnyeoul-cultural-village.jpg" alt="흰여울문화마을 해안 풍경" /></div><div class="place-copy"><div><span class="pill calm">혼잡도 24% · 여유</span><button class="heart">♡</button></div><h2>흰여울문화마을</h2><p>영도구 · 바다 산책과 감성 골목</p><div class="tags"><span>#오션뷰</span><span>#산책</span><span>#로컬카페</span></div><button class="outline course-btn" data-course="흰여울문화마을">이곳으로 코스 만들기 →</button></div></article>
       <h2 class="subheading" id="recommendTitle">지금 가기 좋은 부산 명소 32곳</h2>
       <div class="small-cards" id="smallCards"></div>
     </section>
 
     <section class="page" id="course">
       <div class="page-heading compact"><p class="eyebrow">AI ROUTE MAKER</p><h1>맞춤 관광 코스</h1><p>여유로운 여행 동선을 만들어요.</p></div>
-      <div class="course-switch"><button class="active">반나절</button><button>하루</button><button>1박 2일</button></div>
-      <article class="course-card"><div class="course-top"><span>오늘의 AI 추천 코스</span><b>약 4시간 · 도보+버스</b></div><h2>영도의 푸른 오후</h2><p>바다와 골목, 지역 상점을 천천히 만나는 여행</p><ol><li><time>13:00</time><span><b>국립해양박물관</b><small>혼잡도 28% · 전시 관람</small></span></li><li><time>14:30</time><span><b>흰여울문화마을</b><small>혼잡도 24% · 골목 산책</small></span></li><li><time>16:10</time><span><b>절영해안산책로</b><small>혼잡도 19% · 노을 포인트</small></span></li><li><time>17:20</time><span><b>영도 로컬 카페</b><small>Discovera 쿠폰 사용 가능</small></span></li></ol><button class="primary" data-go="stamp">이 코스로 여행 시작하기</button></article>
+      <div class="course-switch" aria-label="여행 기간 선택"><button class="active" data-duration="half">반나절</button><button data-duration="day">하루</button><button data-duration="stay">1박 2일</button></div>
+      <div class="route-area-row" role="tablist" aria-label="여행 권역 선택">
+        <button class="active" data-region="oldtown">원도심</button><button data-region="west">서부·사하</button><button data-region="yeongdo">영도</button><button data-region="urban">도심·온천</button><button data-region="south">남부·수영</button><button data-region="river">낙동강</button><button data-region="east">동부권</button>
+      </div>
+      <p class="course-guide">기간과 권역을 바꾸면 AI가 다른 명소와 동선을 제안해요.</p>
+      <article class="course-card" id="courseCard"></article>
     </section>
 
     <section class="page" id="stamp">

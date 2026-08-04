@@ -9,7 +9,33 @@ function move(id){pages.forEach(p=>p.classList.toggle('active',p.id===id));navs.
 document.querySelectorAll('[data-go]').forEach(button=>button.addEventListener('click',()=>move(button.dataset.go)));
 document.querySelectorAll('.map-pin').forEach(pin=>pin.addEventListener('click',()=>{const [level,alt]=density[pin.dataset.place];document.querySelector('#placeTitle').textContent=pin.dataset.place;document.querySelector('#placeDensity').innerHTML=level.replace(' · ',' <em>')+'</em>';document.querySelector('#placeAlt').textContent=alt;}));
 document.querySelectorAll('.filter-row button').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.filter-row button').forEach(b=>b.classList.remove('active'));button.classList.add('active');renderRecommendations(button.dataset.filter);toast.textContent=`${button.textContent} 테마에 맞는 장소를 찾았어요`;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800);}));
-document.querySelectorAll('.course-switch button').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.course-switch button').forEach(b=>b.classList.remove('active'));button.classList.add('active');}));
+let selectedDuration='half';
+let selectedRegion='oldtown';
+
+const routeRegions={
+ oldtown:{label:'원도심',title:'부산 원도심의 골목과 시장',districts:'중구 · 동구',stops:[['용두산공원·부산타워','부산항을 내려다보는 전망'],['국제시장','로컬 먹거리와 시장 탐방'],['초량 이바구길','근현대 골목 산책'],['부산항 북항','항구 야경과 산책'],['보수동책방골목','책방에서 쉬어가기']]},
+ west:{label:'서부·사하',title:'송도에서 다대포까지의 해안선',districts:'서구 · 사하구',stops:[['송도해수욕장','바다 산책과 케이블카 뷰'],['암남공원','숲길과 해안 절벽'],['감천문화마을','색채 골목과 문화 탐방'],['다대포해수욕장','일몰과 낙조 명소'],['몰운대','고요한 해안 산책']]},
+ yeongdo:{label:'영도',title:'영도의 푸른 오후',districts:'영도구',stops:[['국립해양박물관','바다 이야기를 만나는 전시'],['흰여울문화마을','바다를 곁에 둔 골목'],['절영해안산책로','파도 소리를 듣는 산책'],['태종대','절벽과 등대 전망'],['영도 로컬 카페','Discovera 쿠폰 사용 가능']]},
+ urban:{label:'도심·온천',title:'도심의 카페와 역사 산책',districts:'부산진구 · 동래구 · 연제구',stops:[['서면','도심 쇼핑과 식사'],['전포카페거리','개성 있는 로컬 카페'],['동래읍성','역사 문화 산책'],['온천천','물가를 따라 걷는 휴식'],['부산아시아드주경기장','도심 스포츠 랜드마크']]},
+ south:{label:'남부·수영',title:'해안 산책과 광안 야경',districts:'남구 · 수영구',stops:[['오륙도스카이워크','해안 절벽 위 전망'],['이기대 해안산책로','바다를 잇는 트레킹'],['광안리해수욕장','광안대교 해변 풍경'],['민락수변공원','수변 야경과 휴식'],['수영사적공원','고즈넉한 역사 산책']]},
+ river:{label:'낙동강',title:'낙동강 생태와 로컬 시장',districts:'북구 · 사상구 · 강서구',stops:[['화명생태공원','강변 자연과 피크닉'],['구포시장','시장 먹거리 체험'],['삼락생태공원','자전거와 습지 산책'],['대저생태공원','계절 꽃과 넓은 들판'],['가덕도','섬 풍경으로 떠나는 드라이브']]},
+ east:{label:'동부권',title:'동부 해안과 산사의 하루',districts:'해운대구 · 금정구 · 기장군 · 연제구',stops:[['해운대해수욕장','도심 해변의 활기'],['청사포','바다와 해안열차 풍경'],['범어사','고요한 산사 탐방'],['금정산성','성곽을 따라 걷기'],['해동용궁사','바다 위 사찰의 풍경'],['오시리아 관광단지','저녁 즐길 거리와 휴식'],['배산','도심을 바라보는 가벼운 산책']]}
+};
+const durationPlans={
+ half:{label:'반나절',meta:'약 4시간 · 도보+대중교통',description:'한 권역에 머물며 덜 붐비는 시간대를 따라 천천히 즐기는 코스',count:3,times:['13:00','14:20','15:50']},
+ day:{label:'하루',meta:'약 8시간 · 도보+대중교통',description:'낮부터 야경까지, 명소와 지역 상권을 함께 만나는 하루 코스',count:4,times:['10:00','11:40','14:10','16:40']},
+ stay:{label:'1박 2일',meta:'1박 2일 · 대중교통+도보',description:'첫날은 대표 명소, 다음 날은 숨은 공간까지 여유 있게 잇는 여행',count:5,times:['1일차 10:00','1일차 12:00','1일차 15:00','1일차 18:00','2일차 10:30']}
+};
+function routeCrowd(name){const spot=touristSpots.find(item=>item.name===name);return spot?`혼잡도 ${spot.crowd}% · ${spot.crowd>=70?'혼잡':spot.crowd>=40?'보통':'여유'}`:'AI 추천 · 지역 체험';}
+function renderCourse(){
+ const plan=durationPlans[selectedDuration];
+ const region=routeRegions[selectedRegion];
+ const stops=region.stops.slice(0,plan.count);
+ document.querySelector('#courseCard').innerHTML=`<div class="course-top"><span>${plan.label} AI 추천 코스 · ${region.label}</span><b>${plan.meta}</b></div><h2>${region.title}</h2><p>${plan.description}<br />${region.districts} 명소를 중심으로 구성했어요.</p><ol>${stops.map((stop,index)=>`<li><time>${plan.times[index]}</time><span><b>${stop[0]}</b><small>${routeCrowd(stop[0])} · ${stop[1]}</small></span></li>`).join('')}</ol><button class="primary route-start">이 코스로 여행 시작하기</button></article>`;
+ document.querySelector('.route-start').addEventListener('click',()=>move('stamp'));
+}
+document.querySelectorAll('.course-switch button').forEach(button=>button.addEventListener('click',()=>{selectedDuration=button.dataset.duration;document.querySelectorAll('.course-switch button').forEach(b=>b.classList.toggle('active',b===button));renderCourse();}));
+document.querySelectorAll('.route-area-row button').forEach(button=>button.addEventListener('click',()=>{selectedRegion=button.dataset.region;document.querySelectorAll('.route-area-row button').forEach(b=>b.classList.toggle('active',b===button));renderCourse();}));
 document.querySelector('.course-btn').addEventListener('click',()=>move('course'));
 
 // 부산 실제 지도를 기준으로 선정한 32개 관광지를 표시합니다.
@@ -22,7 +48,7 @@ const spotThemes={
  '용두산공원·부산타워':'문화·전시','국제시장':'맛집·시장','송도해수욕장':'자연·산책','암남공원':'자연·산책','초량 이바구길':'문화·전시','부산항 북항':'문화·전시','흰여울문화마을':'문화·전시','태종대':'자연·산책','서면':'맛집·시장','전포카페거리':'맛집·시장','동래읍성':'문화·전시','온천천':'자연·산책','오륙도스카이워크':'자연·산책','이기대 해안산책로':'자연·산책','화명생태공원':'자연·산책','구포시장':'맛집·시장','해운대해수욕장':'자연·산책','청사포':'자연·산책','감천문화마을':'문화·전시','다대포해수욕장':'자연·산책','범어사':'문화·전시','금정산성':'문화·전시','대저생태공원':'자연·산책','가덕도':'자연·산책','부산아시아드주경기장':'문화·전시','배산':'자연·산책','광안리해수욕장':'자연·산책','민락수변공원':'맛집·시장','삼락생태공원':'자연·산책','사상근린공원':'자연·산책','해동용궁사':'문화·전시','오시리아 관광단지':'문화·전시'
 };
 const spotImages={
- '용두산공원·부산타워':'assets/yongdusan.jpg','국제시장':'assets/gukje.jpg','암남공원':'assets/amnam.jpg','초량 이바구길':'assets/choryang.jpg','부산항 북항':'assets/northport.jpg','흰여울문화마을':'assets/huinnyeoul.jpg','태종대':'assets/taejongdae.jpg','서면':'assets/seomyeon.jpg','전포카페거리':'assets/jeonpo.jpg','오륙도스카이워크':'assets/oryukdo.jpg','이기대 해안산책로':'assets/igidae.jpg','화명생태공원':'assets/hwamyeong.jpg','구포시장':'assets/gupo.jpg','해운대해수욕장':'assets/haeundae.jpg','청사포':'assets/cheongsapo.jpg','감천문화마을':'assets/gamcheon.jpg','범어사':'assets/beomeosa.jpg','부산아시아드주경기장':'assets/asiad.jpg','사상근린공원':'assets/sasang-park.jpg','광안리해수욕장':'assets/gwangalli.jpg','오시리아 관광단지':'assets/osiria.jpg','대저생태공원':'assets/daejeo.jpg'
+ '용두산공원·부산타워':'assets/yongdusan.jpg','국제시장':'assets/gukje.jpg','송도해수욕장':'assets/songdo.webp','암남공원':'assets/amnam.jpg','초량 이바구길':'assets/choryang.jpg','부산항 북항':'assets/northport.jpg','흰여울문화마을':'assets/huinnyeoul-cultural-village.jpg','태종대':'assets/taejongdae.jpg','서면':'assets/seomyeon.jpg','전포카페거리':'assets/jeonpo.jpg','동래읍성':'assets/dongnae.webp','온천천':'assets/oncheon.webp','오륙도스카이워크':'assets/oryukdo.jpg','이기대 해안산책로':'assets/igidae.jpg','화명생태공원':'assets/hwamyeong.jpg','구포시장':'assets/gupo.jpg','해운대해수욕장':'assets/haeundae.jpg','청사포':'assets/cheongsapo.jpg','감천문화마을':'assets/gamcheon.jpg','다대포해수욕장':'assets/dadaepo.webp','범어사':'assets/beomeosa.jpg','금정산성':'assets/geumjeongsanseong.jpg','대저생태공원':'assets/daejeo.jpg','가덕도':'assets/gadeok.webp','부산아시아드주경기장':'assets/asiad.jpg','배산':'assets/baesan.webp','광안리해수욕장':'assets/gwangalli.jpg','민락수변공원':'assets/millak.webp','삼락생태공원':'assets/samrak.jpg','사상근린공원':'assets/sasang-park.jpg','해동용궁사':'assets/haedong.jpg','오시리아 관광단지':'assets/osiria.jpg'
 };
 touristSpots.forEach(spot=>spot.theme=spotThemes[spot.name]);
 function renderRecommendations(filter='전체'){
@@ -31,6 +57,7 @@ function renderRecommendations(filter='전체'){
  cards.innerHTML=visible.map(spot=>{const image=spotImages[spot.name];const level=spot.crowd>=70?'high':spot.crowd>=40?'medium':'low';return `<article class="mini-card spot-card"><div class="mini-art ${level}">${image?`<img src="${image}" alt="${spot.name}">`:`<span>${spot.theme==='자연·산책'?'♧':spot.theme==='문화·전시'?'⌂':'✦'}</span>`}</div><div class="spot-meta"><b>${spot.name}</b><p>${spot.district} · 혼잡도 <strong class="${level}">${spot.crowd}%</strong></p><small>${spot.theme}</small></div></article>`;}).join('');
 }
 renderRecommendations();
+renderCourse();
 
 let crowdMap, spotMarkers=[];
 const crowdLevel=value=>value>=70?'high':value>=40?'medium':'low';
