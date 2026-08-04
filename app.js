@@ -32,7 +32,7 @@ function renderCourse(){
  const plan=durationPlans[selectedDuration];
  const region=routeRegions[selectedRegion];
  const stops=region.stops.slice(0,plan.count);
- document.querySelector('#courseCard').innerHTML=`<div class="course-top"><span>${plan.label} AI 추천 코스 · ${region.label}</span><b>${plan.meta}</b></div><h2>${region.title}</h2><p>${plan.description}<br />${region.districts} 명소를 중심으로 구성했어요.</p><ol>${stops.map((stop,index)=>`<li><time>${plan.times[index]}</time><span><b>${stop[0]}</b><small>${routeCrowd(stop[0])} · ${stop[1]}</small></span></li>`).join('')}</ol><button class="primary route-start">이 코스로 여행 시작하기</button></article>`;
+ document.querySelector('#courseCard').innerHTML=`<div class="course-top"><span>${plan.label} AI 추천 코스 · ${region.label}</span><b>${plan.meta}</b></div><h2>${region.title}</h2><p>${plan.description}<br />${region.districts} 명소를 중심으로 구성했어요.</p><ol>${stops.map((stop,index)=>`<li><time>${plan.times[index]}</time><i class="timeline-dot" aria-hidden="true"></i><span><b>${stop[0]}</b><small>${routeCrowd(stop[0])} · ${stop[1]}</small></span></li>`).join('')}</ol><button class="primary route-start">이 코스로 여행 시작하기</button></article>`;
  document.querySelector('.route-start').addEventListener('click',()=>move('stamp'));
 }
 document.querySelectorAll('.course-switch button').forEach(button=>button.addEventListener('click',()=>{selectedDuration=button.dataset.duration;document.querySelectorAll('.course-switch button').forEach(b=>b.classList.toggle('active',b===button));renderCourse();}));

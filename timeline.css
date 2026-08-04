@@ -1,0 +1,4 @@
+.course-card li{grid-template-columns:54px 18px minmax(0,1fr);gap:6px}
+.course-card li:not(:last-child):before,.course-card li span:before{display:none}
+.timeline-dot{position:relative;display:block;width:11px;height:11px;margin-top:1px;border:3px solid #e5f8f5;border-radius:50%;background:#10bfc0}
+.course-card li:not(:last-child) .timeline-dot:after{content:'';position:absolute;left:2px;top:11px;height:43px;border-left:2px dotted #a8dce0}
