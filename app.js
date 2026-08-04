@@ -87,6 +87,11 @@ renderCourse();
 
 const stampStoreKey='discovera-demo-stamps-v1';
 const stampLimit=12;
+// 시연 초기화 링크: ?reset-stamps=1로 접속하면 이 기기의 스탬프만 한 번 초기화합니다.
+if(new URLSearchParams(location.search).get('reset-stamps')==='1'){
+ localStorage.removeItem(stampStoreKey);
+ history.replaceState({},'',`${location.pathname}${location.hash}`);
+}
 const loadStamps=()=>{try{const saved=JSON.parse(localStorage.getItem(stampStoreKey)||'[]');return Array.isArray(saved)?saved:[];}catch{return[];}};
 let earnedStamps=loadStamps();
 const saveStamps=()=>localStorage.setItem(stampStoreKey,JSON.stringify(earnedStamps));
