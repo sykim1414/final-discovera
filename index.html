@@ -41,7 +41,7 @@
         <div class="section-title"><h2>부산, 지금은 어때요?</h2><button data-go="map">지도 보기</button></div>
         <div class="data-status"><span><i></i> 데이터 분석 정상</span><time id="updatedAt">10분 전 갱신</time></div>
         <div class="density-summary">
-          <div><b>32<span>%</span></b><p>부산 평균 혼잡도</p></div>
+          <div><b id="averageDensity">32<span>%</span></b><p>부산 평균 혼잡도</p></div>
           <div class="density-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <span class="low-badge">여유로움</span>
         </div>
@@ -69,7 +69,7 @@
     <section class="page" id="recommend">
       <div class="page-heading compact"><p class="eyebrow">PERSONAL AI PICK</p><h1>나를 위한 부산 여행</h1><p>혼잡도, 취향, 이동 시간을 반영했어요.</p></div>
       <div class="filter-row"><button class="active" data-filter="전체">전체</button><button data-filter="자연·산책">자연·산책</button><button data-filter="문화·전시">문화·전시</button><button data-filter="맛집·시장">맛집·시장</button></div>
-      <article class="place-card featured"><div class="place-art art-yeongdo"><img src="assets/huinnyeoul-cultural-village.jpg" alt="흰여울문화마을 해안 풍경" /></div><div class="place-copy"><div><span class="pill calm">혼잡도 24% · 여유</span><button class="heart">♡</button></div><h2>흰여울문화마을</h2><p>영도구 · 바다 산책과 감성 골목</p><div class="tags"><span>#오션뷰</span><span>#산책</span><span>#로컬카페</span></div><button class="outline course-btn" data-course="흰여울문화마을">이곳으로 코스 만들기 →</button></div></article>
+      <article class="place-card featured" id="featuredRecommendation"><div class="place-art art-yeongdo"><img id="featuredImage" src="assets/huinnyeoul-cultural-village.jpg" alt="흰여울문화마을 해안 풍경" /></div><div class="place-copy"><div><span class="pill calm" id="featuredCrowd">혼잡도 24% · 여유</span><button class="heart">♡</button></div><h2 id="featuredName">흰여울문화마을</h2><p id="featuredDistrict">영도구 · 바다 산책과 감성 골목</p><div class="tags"><span id="featuredTheme">#문화·전시</span><span>#AI추천</span><span>#로컬여행</span></div><button class="outline course-btn" data-course="흰여울문화마을">이곳으로 코스 만들기 →</button></div></article>
       <h2 class="subheading" id="recommendTitle">지금 가기 좋은 부산 명소 32곳</h2>
       <div class="small-cards" id="smallCards"></div>
     </section>
