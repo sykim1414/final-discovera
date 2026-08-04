@@ -12,13 +12,20 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="realtime.css" />
   <link rel="stylesheet" href="timeline.css" />
+  <link rel="stylesheet" href="notification.css" />
 </head>
 <body>
   <main class="app-shell">
     <header class="topbar">
       <a class="brand" href="#home" aria-label="Discovera 홈"><span class="pin">⌕</span><b>Discover<span>a</span></b></a>
-      <button class="bell" aria-label="알림">♧<i></i></button>
+      <button class="bell" id="notificationButton" aria-label="알림 열기" aria-expanded="false">🔔<i></i></button>
     </header>
+
+    <section class="notification-panel" id="notificationPanel" aria-label="알림" hidden>
+      <div class="notification-head"><div><p class="eyebrow">DISCOVERA ALERT</p><h2>알림</h2></div><button id="closeNotifications" aria-label="알림 닫기">×</button></div>
+      <div class="notification-list" id="notificationList"></div>
+      <button class="outline" id="markNotificationsRead">모든 알림 읽음으로 표시</button>
+    </section>
 
     <section class="page active" id="home">
       <div class="home-hero">
