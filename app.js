@@ -55,7 +55,8 @@ touristSpots.forEach(spot=>{spot.theme=spotThemes[spot.name];spot.baseCrowd=spot
 function renderRecommendations(filter='전체'){
  const visible=filter==='전체'?touristSpots:touristSpots.filter(spot=>spot.theme===filter);
  document.querySelector('#recommendTitle').textContent=filter==='전체'?`지금 가기 좋은 부산 명소 ${visible.length}곳`:`${filter} 명소 ${visible.length}곳`;
- cards.innerHTML=visible.map(spot=>{const image=spotImages[spot.name];const level=spot.crowd>=70?'high':spot.crowd>=40?'medium':'low';return `<article class="mini-card spot-card"><div class="mini-art ${level}">${image?`<img src="${image}" alt="${spot.name}">`:`<span>${spot.theme==='자연·산책'?'♧':spot.theme==='문화·전시'?'⌂':'✦'}</span>`}</div><div class="spot-meta"><b>${spot.name}</b><p>${spot.district} · 혼잡도 <strong class="${level}">${spot.crowd}%</strong></p><small>${spot.theme}</small></div></article>`;}).join('');
+ cards.innerHTML=visible.map(spot=>{const image=spotImages[spot.name];const level=spot.crowd>=70?'high':spot.crowd>=40?'medium':'low';return `<article class="mini-card spot-card" data-spot-id="${spot.id}" role="button" tabindex="0" aria-label="${spot.name} 상세 정보 보기"><div class="mini-art ${level}">${image?`<img src="${image}" alt="${spot.name}">`:`<span>${spot.theme==='자연·산책'?'♧':spot.theme==='문화·전시'?'⌂':'✦'}</span>`}</div><div class="spot-meta"><b>${spot.name}</b><p>${spot.district} · 혼잡도 <strong class="${level}">${spot.crowd}%</strong></p><small>${spot.theme}</small></div></article>`;}).join('');
+ cards.querySelectorAll('.spot-card').forEach(card=>{const spot=touristSpots.find(item=>item.id===card.dataset.spotId);card.addEventListener('click',()=>openSpotDetail(spot));card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openSpotDetail(spot);}});});
 }
 function renderFeaturedRecommendation(){
  const pick=[...touristSpots].sort((a,b)=>a.crowd-b.crowd)[0];
@@ -69,6 +70,7 @@ function renderFeaturedRecommendation(){
  document.querySelector('#featuredImage').src=image||'';
  document.querySelector('#featuredImage').alt=`${pick.name} 풍경`;
  document.querySelector('.course-btn').dataset.course=pick.name;
+ document.querySelector('#featuredRecommendation').dataset.spotId=pick.id;
 }
 renderRecommendations();
 renderCourse();
@@ -127,6 +129,31 @@ notificationButton.addEventListener('click',()=>toggleNotifications(notification
 document.querySelector('#closeNotifications').addEventListener('click',()=>toggleNotifications(false));
 document.querySelector('#markNotificationsRead').addEventListener('click',()=>{document.querySelector('.bell i').style.display='none';toggleNotifications(false);showToast('모든 알림을 읽음으로 표시했어요.');});
 renderNotifications();
+
+const detailDescriptions={
+ '자연·산책':'바다와 공원, 산책길을 따라 부산의 풍경을 여유롭게 즐길 수 있는 장소예요.',
+ '문화·전시':'부산의 역사와 지역 이야기를 직접 만나 볼 수 있는 문화 명소예요.',
+ '맛집·시장':'지역의 일상과 먹거리를 가까이에서 경험할 수 있는 로컬 공간이에요.'
+};
+let activeDetailSpot=null;
+function openSpotDetail(spot){
+ if(!spot)return;activeDetailSpot=spot;
+ const image=spotImages[spot.name];
+ const panel=document.querySelector('#spotDetailPanel');
+ document.querySelector('#detailImage').src=image||'';document.querySelector('#detailImage').alt=`${spot.name} 풍경`;
+ document.querySelector('#detailCrowd').textContent=`혼잡도 ${spot.crowd}% · ${crowdText(spot.crowd)}`;
+ document.querySelector('#detailName').textContent=spot.name;
+ document.querySelector('#detailDistrict').textContent=`${spot.district} · ${spot.theme}`;
+ document.querySelector('#detailDescription').textContent=detailDescriptions[spot.theme];
+ document.querySelector('#detailTheme').textContent=`#${spot.theme}`;
+ document.querySelector('#detailReason').textContent=spot.crowd<40?'#지금_여유로움':'#혼잡도_확인_추천';
+ panel.hidden=false;
+}
+function closeSpotDetail(){document.querySelector('#spotDetailPanel').hidden=true;}
+document.querySelector('#closeSpotDetail').addEventListener('click',closeSpotDetail);
+document.querySelector('#detailMapButton').addEventListener('click',()=>{if(activeDetailSpot){closeSpotDetail();move('map');openSpot(activeDetailSpot);crowdMap&&crowdMap.setView([activeDetailSpot.lat,activeDetailSpot.lng],14);}});
+document.querySelector('#detailCourseButton').addEventListener('click',()=>{closeSpotDetail();move('course');showToast(`${activeDetailSpot.name}을(를) 포함한 코스를 살펴보세요.`);});
+document.querySelector('#featuredRecommendation').addEventListener('click',event=>{if(!event.target.closest('button'))openSpotDetail(touristSpots.find(spot=>spot.id===event.currentTarget.dataset.spotId));});
 
 let crowdMap, spotMarkers=[];
 let focusedSpot=touristSpots.find(spot=>spot.name==='해운대해수욕장')||touristSpots[0];

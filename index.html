@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="realtime.css" />
   <link rel="stylesheet" href="timeline.css" />
   <link rel="stylesheet" href="notification.css" />
+  <link rel="stylesheet" href="spot-detail.css" />
 </head>
 <body>
   <main class="app-shell">
@@ -25,6 +26,12 @@
       <div class="notification-head"><div><p class="eyebrow">DISCOVERA ALERT</p><h2>알림</h2></div><button id="closeNotifications" aria-label="알림 닫기">×</button></div>
       <div class="notification-list" id="notificationList"></div>
       <button class="outline" id="markNotificationsRead">모든 알림 읽음으로 표시</button>
+    </section>
+
+    <section class="spot-detail-panel" id="spotDetailPanel" aria-label="명소 상세 정보" hidden>
+      <button class="detail-close" id="closeSpotDetail" aria-label="명소 상세 닫기">×</button>
+      <img id="detailImage" alt="" />
+      <div class="detail-copy"><span class="pill calm" id="detailCrowd"></span><h2 id="detailName"></h2><p id="detailDistrict"></p><p id="detailDescription"></p><div class="detail-tags"><span id="detailTheme"></span><span id="detailReason"></span></div><div class="detail-actions"><button class="outline" id="detailMapButton">지도에서 보기</button><button class="primary" id="detailCourseButton">코스 만들기</button></div></div>
     </section>
 
     <section class="page active" id="home">
