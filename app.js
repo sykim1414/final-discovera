@@ -59,6 +59,48 @@ function renderRecommendations(filter='전체'){
 renderRecommendations();
 renderCourse();
 
+const stampStoreKey='discovera-demo-stamps-v1';
+const stampLimit=12;
+const loadStamps=()=>{try{const saved=JSON.parse(localStorage.getItem(stampStoreKey)||'[]');return Array.isArray(saved)?saved:[];}catch{return[];}};
+let earnedStamps=loadStamps();
+const saveStamps=()=>localStorage.setItem(stampStoreKey,JSON.stringify(earnedStamps));
+const distanceInMeters=(lat1,lng1,lat2,lng2)=>{const radius=6371000;const radians=value=>value*Math.PI/180;const dLat=radians(lat2-lat1),dLng=radians(lng2-lng1);const a=Math.sin(dLat/2)**2+Math.cos(radians(lat1))*Math.cos(radians(lat2))*Math.sin(dLng/2)**2;return radius*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));};
+function showToast(message){toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2400);}
+function renderStamp(){
+ const grid=document.querySelector('#stampGrid');
+ const picker=document.querySelector('#demoPlace');
+ document.querySelector('#stampCount').innerHTML=`${String(earnedStamps.length).padStart(2,'0')}<small>/ ${stampLimit}</small>`;
+ picker.innerHTML=touristSpots.map(spot=>`<option value="${spot.id}">${spot.district} · ${spot.name}</option>`).join('');
+ const visited=earnedStamps.map(id=>touristSpots.find(spot=>spot.id===id)).filter(Boolean);
+ const cards=[...visited.slice(0,6),...Array(Math.max(0,6-visited.length)).fill(null)];
+ grid.innerHTML=cards.map(spot=>spot?`<div class="earned">✓<span>${spot.name}</span></div>`:'<div>＋<span>다음 여행</span></div>').join('');
+ const unlocked=earnedStamps.length>=3;
+ const status=document.querySelector('#couponStatus'),text=document.querySelector('#couponText'),button=document.querySelector('#couponButton'),card=document.querySelector('#couponCard');
+ status.textContent=unlocked?'스탬프 3개 달성 · 쿠폰 사용 가능':`스탬프 ${Math.max(0,3-earnedStamps.length)}개 더 모으면 리워드 해제`;
+ text.textContent=unlocked?'쿠폰 코드 DISCOVERA10 · 제휴 지역 상점에서 제시하세요.':'방문 인증 후 지역 상권 할인 쿠폰이 열려요.';
+ button.disabled=!unlocked;button.textContent=unlocked?'쿠폰 보기':'잠김';card.classList.toggle('coupon-unlocked',unlocked);
+}
+function earnStamp(spot,source){
+ if(earnedStamps.includes(spot.id)){showToast(`${spot.name} 스탬프는 이미 적립됐어요.`);return;}
+ if(earnedStamps.length>=stampLimit){showToast(`이번 달 스탬프 ${stampLimit}개를 모두 모았어요!`);return;}
+ earnedStamps=[...earnedStamps,spot.id];saveStamps();renderStamp();showToast(`${source} ${spot.name} 스탬프를 적립했어요!`);
+}
+function certifyCurrentLocation(){
+ if(!navigator.geolocation){showToast('이 브라우저에서는 위치 인증을 지원하지 않아요. 데모 인증을 이용해 주세요.');return;}
+ const button=document.querySelector('#locationVerify');button.disabled=true;button.textContent='현재 위치 확인 중…';
+ navigator.geolocation.getCurrentPosition(position=>{
+  const {latitude,longitude}=position.coords;
+  const closest=touristSpots.map(spot=>({...spot,distance:distanceInMeters(latitude,longitude,spot.lat,spot.lng)})).sort((a,b)=>a.distance-b.distance)[0];
+  button.disabled=false;button.textContent='현재 위치로 방문 인증';
+  if(closest.distance<=350)earnStamp(closest,'방문 인증 완료 ·');
+  else showToast(`가장 가까운 ${closest.name}까지 약 ${Math.round(closest.distance)}m예요. 350m 안에서 인증할 수 있어요.`);
+ },()=>{button.disabled=false;button.textContent='현재 위치로 방문 인증';showToast('위치 권한을 허용해 주세요. 발표 중에는 데모 인증을 사용할 수 있어요.');},{enableHighAccuracy:true,timeout:10000,maximumAge:60000});
+}
+document.querySelector('#locationVerify').addEventListener('click',certifyCurrentLocation);
+document.querySelector('#demoVerify').addEventListener('click',()=>{const selected=touristSpots.find(spot=>spot.id===document.querySelector('#demoPlace').value);if(selected)earnStamp(selected,'데모 인증 완료 ·');});
+document.querySelector('#couponButton').addEventListener('click',()=>showToast('쿠폰 코드 DISCOVERA10 · 지역 제휴 상점 10% 할인'));
+renderStamp();
+
 let crowdMap, spotMarkers=[];
 const crowdLevel=value=>value>=70?'high':value>=40?'medium':'low';
 const crowdText=value=>value>=70?'혼잡':value>=40?'보통':'여유';
