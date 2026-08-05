@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="search.css" />
   <link rel="stylesheet" href="route-map.css" />
   <link rel="stylesheet" href="stamp-collection.css" />
+  <link rel="stylesheet" href="city-info.css" />
 </head>
 <body>
   <main class="app-shell">
@@ -79,6 +80,11 @@
         </div>
       </section>
 
+      <section class="section city-info-promo">
+        <div class="section-title"><h2>여행 전 꼭 확인해요</h2><button data-go="info" data-info-tab="weather">전체보기</button></div>
+        <div class="city-info-buttons"><button data-go="info" data-info-tab="weather"><span>☀</span><b>부산 날씨</b><small id="homeWeatherSummary">실시간 날씨 확인</small></button><button data-go="info" data-info-tab="events"><span>♬</span><b>축제·행사</b><small>이번 주 행사 확인</small></button></div>
+      </section>
+
       <section class="section stamp-promo">
         <div><span class="gift">✦</span><h2>여행할수록 더 특별하게</h2><p>숨은 부산을 방문하고 스탬프를 모아보세요.</p></div>
         <button data-go="stamp">내 스탬프 ›</button>
@@ -124,6 +130,13 @@
       <article class="coupon" id="couponCard"><div class="coupon-icon">%</div><div><small id="couponStatus">스탬프 3개 달성 리워드</small><h2>지역 상점 10% 할인</h2><p id="couponText">스탬프를 3개 모으면 쿠폰이 열려요.</p></div><button id="couponButton" disabled>잠김</button></article>
     </section>
 
+    <section class="page" id="info">
+      <div class="page-heading compact"><p class="eyebrow">BUSAN TRIP INFO</p><h1>날씨와 행사</h1><p>여행 전에 부산의 오늘과 즐길 거리를 확인하세요.</p></div>
+      <div class="info-tabs" role="tablist" aria-label="날씨와 행사 선택"><button class="active" data-info-tab="weather" role="tab">날씨</button><button data-info-tab="events" role="tab">축제·행사</button></div>
+      <section class="info-panel" id="weatherPanel"><div class="weather-loading">부산 날씨를 불러오는 중이에요.</div></section>
+      <section class="info-panel" id="eventsPanel" hidden><div class="event-list" id="eventList"></div><a class="official-events" href="https://www.visitbusan.net/kr/schedule/list.do?boardId=BBS_0000009&amp;menuCd=DOM_000000204012000000&amp;month=8&amp;year=2026" target="_blank" rel="noopener">Visit Busan에서 전체 일정 확인 →</a></section>
+    </section>
+
     <nav class="bottom-nav" aria-label="주요 메뉴"><button class="nav active" data-go="home"><span>⌂</span>홈</button><button class="nav" data-go="map"><span>⌖</span>혼잡지도</button><button class="nav center" data-go="recommend"><span>✦</span>AI 추천</button><button class="nav" data-go="course"><span>⌁</span>코스</button><button class="nav" data-go="stamp"><span>♧</span>리워드</button></nav>
   </main>
   <section class="auth-modal" id="authModal" aria-labelledby="authTitle" hidden>
@@ -159,6 +172,6 @@
   </section>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=20260805-stamp-passport"></script>
+<script src="app.js?v=20260805-weather-events"></script>
 </body>
 </html>

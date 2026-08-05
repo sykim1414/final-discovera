@@ -7,6 +7,32 @@ document.querySelector('#updatedAt').textContent=`${realtimeText} · 데모 데�
 const pages=document.querySelectorAll('.page'),navs=document.querySelectorAll('.nav'),toast=document.querySelector('.toast');
 function move(id){pages.forEach(p=>p.classList.toggle('active',p.id===id));navs.forEach(n=>n.classList.toggle('active',n.dataset.go===id));document.querySelector('.app-shell').scrollTop=0;if(id==='map'&&crowdMap)setTimeout(()=>crowdMap.invalidateSize(),0);}
 document.querySelectorAll('[data-go]').forEach(button=>button.addEventListener('click',()=>move(button.dataset.go)));
+const weatherCodes={0:['맑음','☀'],1:['대체로 맑음','🌤'],2:['구름 조금','⛅'],3:['흐림','☁'],45:['안개','🌫'],48:['안개','🌫'],51:['약한 이슬비','🌦'],53:['이슬비','🌦'],55:['강한 이슬비','🌧'],61:['약한 비','🌦'],63:['비','🌧'],65:['강한 비','🌧'],71:['약한 눈','🌨'],73:['눈','🌨'],75:['강한 눈','❄'],80:['소나기','🌦'],81:['소나기','🌧'],82:['강한 소나기','⛈'],95:['뇌우','⛈'],96:['우박·뇌우','⛈'],99:['강한 우박·뇌우','⛈']};
+const busanEvents=[
+ {state:'진행 중',title:'2026 북항 오션 SUP FESTA',date:'7.31 – 8.9',place:'부산항 북항 일원',note:'바다 위 SUP 체험과 북항의 여름 풍경을 함께 즐겨요.'},
+ {state:'곧 시작',title:'제30회 부산바다축제',date:'8.7 – 8.13',place:'다대포해수욕장 일원',note:'다대포 선셋과 함께하는 부산 대표 여름 축제예요.'},
+ {state:'예정',title:'2026 세계도서관정보대회',date:'8.10 – 8.13',place:'부산 일원',note:'세계의 도서관과 지식 문화를 부산에서 만나요.'},
+ {state:'예정',title:'부산인디커넥트페스티벌 2026',date:'8.14 – 8.16',place:'부산 일원',note:'다양한 인디게임과 개발자를 만나는 글로벌 행사예요.'}
+];
+let weatherLoaded=false;
+function weatherLabel(code){return weatherCodes[code]||['날씨 정보','◌'];}
+function weatherTip(current){if(current.precipitation>0||[61,63,65,80,81,82,95,96,99].includes(current.weather_code))return '비가 내리고 있어요. 실내 전시나 전통시장 중심 코스를 추천해요.';if(current.temperature_2m>=30)return '기온이 높아요. 한낮 야외 이동을 줄이고 그늘과 실내 휴식지를 포함하세요.';if(current.wind_speed_10m>=25)return '바람이 강해요. 해안 산책로와 전망대 이용 시 안전에 유의하세요.';return '야외 관광하기 무난한 날씨예요. 생태공원과 산책 명소를 둘러보세요.';}
+async function loadBusanWeather(){
+ if(weatherLoaded)return;weatherLoaded=true;
+ const panel=document.querySelector('#weatherPanel');
+ try{
+  const response=await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.1796&longitude=129.0756&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=3');
+  if(!response.ok)throw new Error('weather');
+  const data=await response.json(),current=data.current,[description,icon]=weatherLabel(current.weather_code);
+  const forecast=data.daily.time.map((date,index)=>{const [label,forecastIcon]=weatherLabel(data.daily.weather_code[index]);const day=new Intl.DateTimeFormat('ko-KR',{weekday:'short'}).format(new Date(`${date}T12:00:00`));return `<article class="forecast-card"><b>${day}</b><span>${forecastIcon}</span><small>${Math.round(data.daily.temperature_2m_min[index])}° / ${Math.round(data.daily.temperature_2m_max[index])}°</small><small>비 ${data.daily.precipitation_probability_max[index]}%</small></article>`;}).join('');
+  panel.innerHTML=`<article class="weather-now"><div class="weather-now-top"><div><small>부산광역시 · 실시간</small><h2>${Math.round(current.temperature_2m)}°</h2></div><span class="weather-icon">${icon}</span></div><p class="weather-desc">${description}</p><div class="weather-metrics"><div><span>체감온도</span><b>${Math.round(current.apparent_temperature)}°</b></div><div><span>강수량</span><b>${current.precipitation} mm</b></div><div><span>바람</span><b>${Math.round(current.wind_speed_10m)} km/h</b></div></div></article><p class="travel-weather-tip">AI 여행 팁 · ${weatherTip(current)}</p><div class="forecast-list">${forecast}</div>`;
+  const homeSummary=document.querySelector('#homeWeatherSummary');if(homeSummary)homeSummary.textContent=`${description} · ${Math.round(current.temperature_2m)}°`;
+ }catch(error){panel.innerHTML='<div class="weather-error">날씨 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.</div>';weatherLoaded=false;}
+}
+function renderEvents(){const list=document.querySelector('#eventList');if(list)list.innerHTML=busanEvents.map(event=>`<article class="event-card"><div class="event-card-top"><span class="event-state">${event.state}</span><strong>${event.date}</strong></div><h2>${event.title}</h2><p>${event.note}</p><strong>⌖ ${event.place}</strong></article>`).join('');}
+function setInfoTab(tab){const weather=tab==='weather';document.querySelector('#weatherPanel').hidden=!weather;document.querySelector('#eventsPanel').hidden=weather;document.querySelectorAll('.info-tabs [data-info-tab]').forEach(button=>button.classList.toggle('active',button.dataset.infoTab===tab));if(weather)loadBusanWeather();}
+document.querySelectorAll('[data-info-tab]').forEach(button=>button.addEventListener('click',()=>setInfoTab(button.dataset.infoTab)));
+renderEvents();loadBusanWeather();
 document.querySelectorAll('.map-pin').forEach(pin=>pin.addEventListener('click',()=>{const [level,alt]=density[pin.dataset.place];document.querySelector('#placeTitle').textContent=pin.dataset.place;document.querySelector('#placeDensity').innerHTML=level.replace(' · ',' <em>')+'</em>';document.querySelector('#placeAlt').textContent=alt;}));
 let selectedFilter='전체';
 document.querySelectorAll('.filter-row button').forEach(button=>button.addEventListener('click',()=>{selectedFilter=button.dataset.filter;document.querySelectorAll('.filter-row button').forEach(b=>b.classList.remove('active'));button.classList.add('active');renderRecommendations(selectedFilter);toast.textContent=`${button.textContent} 테마에 맞는 장소를 찾았어요`;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800);}));
