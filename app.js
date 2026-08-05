@@ -62,20 +62,29 @@ const spotImages={
  '용두산공원·부산타워':'assets/yongdusan.jpg','국제시장':'assets/gukje.jpg','송도해수욕장':'assets/songdo.webp','암남공원':'assets/amnam.jpg','초량 이바구길':'assets/choryang.jpg','부산항 북항':'assets/northport.jpg','흰여울문화마을':'assets/huinnyeoul-cultural-village.jpg','태종대':'assets/taejongdae.jpg','서면':'assets/seomyeon.jpg','전포카페거리':'assets/jeonpo.jpg','동래읍성':'assets/dongnae.webp','온천천':'assets/oncheon.webp','오륙도스카이워크':'assets/oryukdo.jpg','이기대 해안산책로':'assets/igidae.jpg','화명생태공원':'assets/hwamyeong.jpg','구포시장':'assets/gupo.jpg','해운대해수욕장':'assets/haeundae.jpg','청사포':'assets/cheongsapo.jpg','감천문화마을':'assets/gamcheon.jpg','다대포해수욕장':'assets/dadaepo.webp','범어사':'assets/beomeosa.jpg','금정산성':'assets/geumjeongsanseong.jpg','대저생태공원':'assets/daejeo.jpg','가덕도':'assets/gadeok.webp','부산아시아드주경기장':'assets/asiad.jpg','배산':'assets/baesan.webp','광안리해수욕장':'assets/gwangalli.jpg','민락수변공원':'assets/millak.webp','삼락생태공원':'assets/samrak.jpg','사상근린공원':'assets/sasang-park.jpg','해동용궁사':'assets/haedong.jpg','오시리아 관광단지':'assets/osiria.jpg'
 };
 touristSpots.forEach(spot=>{spot.theme=spotThemes[spot.name];spot.baseCrowd=spot.crowd;});
+const equityDistricts=new Set(['강서구','사상구','북구','사하구']);
+const isEquitySpot=spot=>equityDistricts.has(spot.district);
+const equityFirst=(a,b)=>(Number(isEquitySpot(b))-Number(isEquitySpot(a)))||(a.crowd-b.crowd);
 function renderRecommendations(filter='전체'){
- const visible=filter==='전체'?touristSpots:touristSpots.filter(spot=>spot.theme===filter);
- document.querySelector('#recommendTitle').textContent=filter==='전체'?`지금 가기 좋은 부산 명소 ${visible.length}곳`:`${filter} 명소 ${visible.length}곳`;
+ const visible=(filter==='전체'?touristSpots:touristSpots.filter(spot=>spot.theme===filter)).slice().sort(equityFirst);
+ document.querySelector('#recommendTitle').textContent=filter==='전체'?`지역 균형을 위한 부산 명소 ${visible.length}곳`:`${filter} 명소 · 지역 균형 우선 추천`;
  cards.innerHTML=visible.map(spot=>{const image=spotImages[spot.name];const level=spot.crowd>=70?'high':spot.crowd>=40?'medium':'low';return `<article class="mini-card spot-card" data-spot-id="${spot.id}" role="button" tabindex="0" aria-label="${spot.name} 상세 정보 보기"><div class="mini-art ${level}">${image?`<img src="${image}" alt="${spot.name}">`:`<span>${spot.theme==='자연·산책'?'♧':spot.theme==='문화·전시'?'⌂':'✦'}</span>`}</div><div class="spot-meta"><b>${spot.name}</b><p>${spot.district} · 혼잡도 <strong class="${level}">${spot.crowd}%</strong></p><small>${spot.theme}</small></div></article>`;}).join('');
  cards.querySelectorAll('.spot-card').forEach(card=>{const spot=touristSpots.find(item=>item.id===card.dataset.spotId);card.addEventListener('click',()=>openSpotDetail(spot));card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openSpotDetail(spot);}});});
 }
+function renderEquitySpotlight(){
+ const picks=touristSpots.filter(isEquitySpot).slice().sort((a,b)=>a.crowd-b.crowd).slice(0,3);
+ const list=document.querySelector('#equitySpotList');
+ list.innerHTML=picks.map(spot=>`<button class="equity-spot" type="button" data-equity-id="${spot.id}"><img src="${spotImages[spot.name]||''}" alt=""><span><b>${spot.name}</b><small>${spot.district} · 지역 상권 연결 추천</small></span><em class="equity-badge ${spot.crowd>=40?'medium':''}">혼잡도 ${spot.crowd}%</em></button>`).join('');
+ list.querySelectorAll('.equity-spot').forEach(button=>button.addEventListener('click',()=>openSpotDetail(touristSpots.find(spot=>spot.id===button.dataset.equityId))));
+}
 function renderFeaturedRecommendation(){
- const pick=[...touristSpots].sort((a,b)=>a.crowd-b.crowd)[0];
+ const pick=touristSpots.filter(isEquitySpot).slice().sort((a,b)=>a.crowd-b.crowd)[0]||[...touristSpots].sort((a,b)=>a.crowd-b.crowd)[0];
  const image=spotImages[pick.name];
  const crowd=document.querySelector('#featuredCrowd');
  crowd.textContent=`혼잡도 ${pick.crowd}% · ${pick.crowd>=70?'혼잡':pick.crowd>=40?'보통':'여유'}`;
  crowd.className=`pill ${pick.crowd>=40?'':'calm'}`;
  document.querySelector('#featuredName').textContent=pick.name;
- document.querySelector('#featuredDistrict').textContent=`${pick.district} · AI가 지금 가장 여유로운 명소로 추천했어요.`;
+ document.querySelector('#featuredDistrict').textContent=`${pick.district} · 관광 수요 분산과 지역 상권 연결을 위해 우선 추천해요.`;
  document.querySelector('#featuredTheme').textContent=`#${pick.theme}`;
  document.querySelector('#featuredImage').src=image||'';
  document.querySelector('#featuredImage').alt=`${pick.name} 풍경`;
@@ -83,6 +92,7 @@ function renderFeaturedRecommendation(){
  document.querySelector('#featuredRecommendation').dataset.spotId=pick.id;
 }
 renderRecommendations();
+renderEquitySpotlight();
 renderCourse();
 
 const stampStoreKey='discovera-demo-stamps-v1';
@@ -189,7 +199,7 @@ const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 function updateMapPins(){spotMarkers.forEach(({spot,marker})=>{const level=crowdLevel(spot.crowd);marker.setIcon(L.divIcon({className:'',html:`<div class="crowd-marker ${level}">${spot.crowd}</div>`,iconSize:[34,34],iconAnchor:[17,17]}));marker.bindPopup(`<div class="map-popup"><b>${spot.name}</b><small>${spot.district} · 실시간 분석</small><strong>${spot.crowd}% · ${crowdText(spot.crowd)}</strong></div>`);});}
 function updateFocusedSpot(){document.querySelector('#placeTitle').textContent=focusedSpot.name;document.querySelector('#placeDensity').innerHTML=`${focusedSpot.crowd}% <em>${crowdText(focusedSpot.crowd)}</em>`;const alternative=touristSpots.filter(item=>item.district!==focusedSpot.district).sort((a,b)=>a.crowd-b.crowd)[0];document.querySelector('#placeAlt').textContent=`${alternative.name} · ${alternative.crowd}%`;}
 function openSpot(spot){focusedSpot=spot;updateFocusedSpot();}
-function updateDashboard(){const average=Math.round(touristSpots.reduce((sum,spot)=>sum+spot.crowd,0)/touristSpots.length);document.querySelector('#averageDensity').innerHTML=`${average}<span>%</span>`;renderRecommendations(selectedFilter);renderFeaturedRecommendation();renderCourse();renderNotifications();updateFocusedSpot();}
+function updateDashboard(){const average=Math.round(touristSpots.reduce((sum,spot)=>sum+spot.crowd,0)/touristSpots.length);document.querySelector('#averageDensity').innerHTML=`${average}<span>%</span>`;renderRecommendations(selectedFilter);renderFeaturedRecommendation();renderEquitySpotlight();renderCourse();renderNotifications();updateFocusedSpot();}
 function applyDemoCrowdVariation(){const phase=Math.floor(Date.now()/30000);touristSpots.forEach((spot,index)=>{const wave=Math.sin((phase+index*3)*0.86)*13+Math.cos((phase+index)*0.41)*6;spot.crowd=Math.round(clamp(spot.baseCrowd+wave,8,92));});}
 function startBusanMap(){if(!window.L)return;crowdMap=L.map('busanMap',{zoomControl:false,attributionControl:true}).setView([35.165,129.065],11);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(crowdMap);L.control.zoom({position:'bottomright'}).addTo(crowdMap);spotMarkers=touristSpots.map(spot=>{const marker=L.marker([spot.lat,spot.lng]).addTo(crowdMap);marker.on('click',()=>openSpot(spot));return{spot,marker};});updateMapPins();}
 async function refreshCrowdData(){let usesLiveApi=false;try{const response=await fetch('/api/crowd');if(!response.ok)throw new Error('fallback');const payload=await response.json();const incoming=new Map(payload.places.map(item=>[item.id,item.crowd]));touristSpots.forEach(spot=>{if(incoming.has(spot.id))spot.crowd=incoming.get(spot.id);});usesLiveApi=true;}catch{applyDemoCrowdVariation();}updateMapPins();updateDashboard();const current=new Date();const label=`${String(current.getHours()).padStart(2,'0')}:${String(current.getMinutes()).padStart(2,'0')} 갱신`;document.querySelector('#syncTime').textContent=label;document.querySelector('#updatedAt').textContent=`${label} · ${usesLiveApi?'실시간 데이터':'시연 데이터'}`;}

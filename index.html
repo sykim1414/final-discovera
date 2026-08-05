@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="notification.css" />
   <link rel="stylesheet" href="spot-detail.css" />
   <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="equity.css" />
 </head>
 <body>
   <main class="app-shell">
@@ -51,6 +52,10 @@
           <div><small>해운대 대신, 지금은</small><h3>영도 흰여울문화마을 어때요?</h3><p>혼잡도 여유 · 현재 위치에서 28분</p></div>
           <button class="round-arrow" data-go="recommend" aria-label="추천 보기">→</button>
         </article>
+      </section>
+
+      <section class="section equity-section">
+        <p class="eyebrow">LOCAL BALANCE PICK</p><div class="section-title"><h2>숨은 지역, 오늘의 주인공</h2><button data-go="recommend">더 보기</button></div><p class="equity-copy">관광 수요가 상대적으로 낮은 강서구·사상구·북구 명소를 우선 추천해 지역 상권과 여행 기회를 연결해요.</p><div class="equity-list" id="equitySpotList"></div>
       </section>
 
       <section class="section">
@@ -130,6 +135,6 @@
   </section>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="app.js?v=20260805-ai-reasons"></script>
+  <script src="app.js?v=20260805-local-balance"></script>
 </body>
 </html>
