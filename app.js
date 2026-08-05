@@ -199,7 +199,7 @@ document.querySelector('#featuredRecommendation').addEventListener('click',event
 
 var crowdMap, spotMarkers=[], routeLine, routeStopMarkers=[], routeRequestId=0;
 let selectedTransport='car';
-const transportOptions={walk:{label:'도보'},car:{label:'자동차',color:'#0878cf'},transit:{label:'버스·지하철'},train:{label:'기차'}};
+const transportOptions={walk:{label:'도보'},car:{label:'자동차',color:'#0878cf'},transit:{label:'버스·지하철'}};
 let focusedSpot=touristSpots.find(spot=>spot.name==='해운대해수욕장')||touristSpots[0];
 const crowdLevel=value=>value>=70?'high':value>=40?'medium':'low';
 const crowdText=value=>value>=70?'혼잡':value>=40?'보통':'여유';
