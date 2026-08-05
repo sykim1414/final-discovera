@@ -32,7 +32,7 @@
     <section class="spot-detail-panel" id="spotDetailPanel" aria-label="명소 상세 정보" hidden>
       <button class="detail-close" id="closeSpotDetail" aria-label="명소 상세 닫기">×</button>
       <img id="detailImage" alt="" />
-      <div class="detail-copy"><span class="pill calm" id="detailCrowd"></span><h2 id="detailName"></h2><p id="detailDistrict"></p><p id="detailDescription"></p><div class="detail-tags"><span id="detailTheme"></span><span id="detailReason"></span></div><div class="detail-actions"><button class="outline" id="detailMapButton">지도에서 보기</button><button class="primary" id="detailCourseButton">코스 만들기</button></div></div>
+      <div class="detail-copy"><span class="pill calm" id="detailCrowd"></span><h2 id="detailName"></h2><p id="detailDistrict"></p><p id="detailDescription"></p><div class="detail-tags"><span id="detailTheme"></span><span id="detailReason"></span></div><section class="ai-reason" aria-labelledby="aiReasonTitle"><div class="ai-reason-head"><span>✦</span><h3 id="aiReasonTitle">AI가 이곳을 추천한 이유</h3></div><ul id="aiReasonList"></ul><small>혼잡도·테마·이동 동선·제휴 상점 정보를 종합한 시연 분석입니다.</small></section><div class="detail-actions"><button class="outline" id="detailMapButton">지도에서 보기</button><button class="primary" id="detailCourseButton">코스 만들기</button></div></div>
     </section>
 
     <section class="page active" id="home">
@@ -130,6 +130,6 @@
   </section>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="app.js?v=20260805-auth"></script>
+  <script src="app.js?v=20260805-ai-reasons"></script>
 </body>
 </html>

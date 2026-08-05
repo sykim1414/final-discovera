@@ -150,6 +150,16 @@ const detailDescriptions={
  '문화·전시':'부산의 역사와 지역 이야기를 직접 만나 볼 수 있는 문화 명소예요.',
  '맛집·시장':'지역의 일상과 먹거리를 가까이에서 경험할 수 있는 로컬 공간이에요.'
 };
+const preferenceLabels={'자연·산책':'바다 산책','문화·전시':'문화 탐방','맛집·시장':'로컬 맛집·시장'};
+function getAiReasons(spot){
+ const benchmark=touristSpots.find(item=>item.name==='해운대해수욕장')||{crowd:80};
+ const difference=benchmark.crowd-spot.crowd;
+ const crowdReason=difference>0?`해운대보다 혼잡도 ${difference}% 낮음`:`현재 해운대와 혼잡도 ${Math.abs(difference)}% 차이`;
+ const match=Math.min(97,82+((spot.id.split('-')[1]*7)%15));
+ const travel=18+((spot.id.split('-')[1]*5)%19);
+ const stores=4+((spot.id.split('-')[1]*3)%8);
+ return [crowdReason,`선택한 ‘${preferenceLabels[spot.theme]}’ 취향과 ${match}% 일치`,`대중교통 예상 이동 ${travel}분`,`주변 지역 상점 ${stores}곳에서 할인 가능`];
+}
 let activeDetailSpot=null;
 function openSpotDetail(spot){
  if(!spot)return;activeDetailSpot=spot;
@@ -162,6 +172,7 @@ function openSpotDetail(spot){
  document.querySelector('#detailDescription').textContent=detailDescriptions[spot.theme];
  document.querySelector('#detailTheme').textContent=`#${spot.theme}`;
  document.querySelector('#detailReason').textContent=spot.crowd<40?'#지금_여유로움':'#혼잡도_확인_추천';
+ document.querySelector('#aiReasonList').innerHTML=getAiReasons(spot).map(reason=>`<li>${reason}</li>`).join('');
  panel.hidden=false;
 }
 function closeSpotDetail(){document.querySelector('#spotDetailPanel').hidden=true;}
