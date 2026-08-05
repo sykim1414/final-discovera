@@ -1,15 +1,24 @@
 const density={해운대해수욕장:['82% · 혼잡','청사포 · 19%'],광안리해수욕장:['76% · 혼잡','수영사적공원 · 22%'],서면:['51% · 보통','전포카페거리 · 29%'],흰여울문화마을:['24% · 여유','절영해안산책로 · 19%'],삼락생태공원:['18% · 여유','화명생태공원 · 16%']};
 const cards=document.querySelector('#smallCards');
+const authUserKey='discovera-demo-user-v1';
+const authSessionKey='discovera-demo-session-v1';
+const currentMember=()=>{try{return JSON.parse(localStorage.getItem(authSessionKey)||'null');}catch{return null;}};
+const memberStoreKey=base=>{const user=currentMember();return user?.email?`${base}:${encodeURIComponent(user.email.toLowerCase())}`:null;};
+function requireMemberFeature(feature='회원 전용 기능'){
+ if(currentMember())return true;
+ showToast(`${feature}은(는) 로그인 후 이용할 수 있어요.`);
+ authMode='login';openAuth();return false;
+}
 const realtimeNow=new Date();
 const realtimeText=`${String(realtimeNow.getHours()).padStart(2,'0')}:${String(realtimeNow.getMinutes()).padStart(2,'0')} 갱신`;
 document.querySelector('#syncTime').textContent=realtimeText;
 document.querySelector('#updatedAt').textContent=`${realtimeText} · 데모 데이터`;
 document.querySelector('.topbar-actions').insertAdjacentHTML('afterbegin','<button class="favorite-trigger" id="favoriteButton" type="button" aria-label="찜 목록 열기">♡<i id="favoriteBadge"></i></button>');
-document.querySelector('.bottom-nav').insertAdjacentHTML('beforebegin','<section class="page" id="favorites"><div class="page-heading compact"><p class="eyebrow">MY FAVORITES</p><h1>나의 찜 목록</h1><p>관심 있는 부산 명소를 한곳에 모아 바로 확인하세요.</p></div><div class="favorite-summary"><span>브라우저에 안전하게 저장돼요.</span><b id="favoriteCount">0곳</b></div><div id="favoriteList"></div></section>');
+document.querySelector('.bottom-nav').insertAdjacentHTML('beforebegin','<section class="page" id="favorites"><div class="page-heading compact"><p class="eyebrow">MY FAVORITES</p><h1>나의 찜 목록</h1><p>관심 있는 부산 명소를 한곳에 모아 바로 확인하세요.</p></div><div class="favorite-summary"><span>로그인한 계정별로 저장돼요.</span><b id="favoriteCount">0곳</b></div><div id="favoriteList"></div></section>');
 document.querySelector('.detail-actions').classList.add('has-favorite');
 document.querySelector('.detail-actions').insertAdjacentHTML('afterbegin','<button class="outline detail-favorite" id="detailFavoriteButton" type="button">♡ 찜하기</button>');
 const pages=document.querySelectorAll('.page'),navs=document.querySelectorAll('.nav'),toast=document.querySelector('.toast');
-function move(id){pages.forEach(p=>p.classList.toggle('active',p.id===id));navs.forEach(n=>n.classList.toggle('active',n.dataset.go===id));document.querySelector('.app-shell').scrollTop=0;if(id==='map'&&crowdMap)setTimeout(()=>crowdMap.invalidateSize(),0);if(id==='favorites')renderFavorites();}
+function move(id){if((id==='favorites'||id==='stamp')&&!requireMemberFeature(id==='favorites'?'찜 목록':'스탬프와 쿠폰'))return;pages.forEach(p=>p.classList.toggle('active',p.id===id));navs.forEach(n=>n.classList.toggle('active',n.dataset.go===id));document.querySelector('.app-shell').scrollTop=0;if(id==='map'&&crowdMap)setTimeout(()=>crowdMap.invalidateSize(),0);if(id==='favorites')renderFavorites();}
 document.querySelectorAll('[data-go]').forEach(button=>button.addEventListener('click',()=>move(button.dataset.go)));
 const weatherCodes={0:['맑음','☀'],1:['대체로 맑음','🌤'],2:['구름 조금','⛅'],3:['흐림','☁'],45:['안개','🌫'],48:['안개','🌫'],51:['약한 이슬비','🌦'],53:['이슬비','🌦'],55:['강한 이슬비','🌧'],61:['약한 비','🌦'],63:['비','🌧'],65:['강한 비','🌧'],71:['약한 눈','🌨'],73:['눈','🌨'],75:['강한 눈','❄'],80:['소나기','🌦'],81:['소나기','🌧'],82:['강한 소나기','⛈'],95:['뇌우','⛈'],96:['우박·뇌우','⛈'],99:['강한 우박·뇌우','⛈']};
 const busanEvents=[
@@ -102,23 +111,24 @@ let travelPurpose=travelPurposes[localStorage.getItem(purposeStoreKey)]||travelP
 const purposeMatch=spot=>travelPurpose.theme===spot.theme?1:0;
 const equityFirst=(a,b)=>(Number(isEquitySpot(b))-Number(isEquitySpot(a)))||(purposeMatch(b)-purposeMatch(a))||(a.crowd-b.crowd);
 const favoriteStoreKey='discovera-favorites-v1';
-const loadFavorites=()=>{try{const saved=JSON.parse(localStorage.getItem(favoriteStoreKey)||'[]');return new Set(Array.isArray(saved)?saved:[]);}catch{return new Set();}};
+const loadFavorites=()=>{const key=memberStoreKey(favoriteStoreKey);if(!key)return new Set();try{const saved=JSON.parse(localStorage.getItem(key)||'[]');return new Set(Array.isArray(saved)?saved:[]);}catch{return new Set();}};
 let favoriteSpots=loadFavorites();
 const isFavorite=spot=>favoriteSpots.has(spot.id);
-const saveFavorites=()=>localStorage.setItem(favoriteStoreKey,JSON.stringify([...favoriteSpots]));
+const saveFavorites=()=>{const key=memberStoreKey(favoriteStoreKey);if(key)localStorage.setItem(key,JSON.stringify([...favoriteSpots]));};
 function syncFavoriteUi(){
- const badge=document.querySelector('#favoriteBadge');badge.textContent=favoriteSpots.size?String(favoriteSpots.size):'';
+ const badge=document.querySelector('#favoriteBadge');badge.textContent=currentMember()&&favoriteSpots.size?String(favoriteSpots.size):'';
  const featured=touristSpots.find(spot=>spot.id===document.querySelector('#featuredRecommendation').dataset.spotId),heart=document.querySelector('#featuredRecommendation .heart');
  if(featured){heart.textContent=isFavorite(featured)?'♥':'♡';heart.classList.toggle('active',isFavorite(featured));heart.setAttribute('aria-label',isFavorite(featured)?`${featured.name} 찜 해제`:`${featured.name} 찜하기`);}
  const detailButton=document.querySelector('#detailFavoriteButton');
  if(activeDetailSpot){detailButton.textContent=isFavorite(activeDetailSpot)?'♥ 찜 해제':'♡ 찜하기';detailButton.classList.toggle('active',isFavorite(activeDetailSpot));}
 }
 function toggleFavorite(spot){
- if(!spot)return;const removing=isFavorite(spot);removing?favoriteSpots.delete(spot.id):favoriteSpots.add(spot.id);saveFavorites();syncFavoriteUi();renderRecommendations(selectedFilter);renderFavorites();showToast(removing?`${spot.name}을(를) 찜 목록에서 뺐어요.`:`${spot.name}을(를) 찜 목록에 저장했어요.`);
+ if(!spot||!requireMemberFeature('찜하기'))return;const removing=isFavorite(spot);removing?favoriteSpots.delete(spot.id):favoriteSpots.add(spot.id);saveFavorites();syncFavoriteUi();renderRecommendations(selectedFilter);renderFavorites();showToast(removing?`${spot.name}을(를) 찜 목록에서 뺐어요.`:`${spot.name}을(를) 찜 목록에 저장했어요.`);
 }
 function renderFavorites(){
  const container=document.querySelector('#favoriteList'),spots=touristSpots.filter(isFavorite);
  document.querySelector('#favoriteCount').textContent=`${spots.length}곳`;
+ if(!currentMember()){container.innerHTML='<div class="favorite-empty member-lock"><span>♙</span><h2>로그인이 필요한 기능이에요</h2><p>회원가입 또는 로그인 후<br>내 계정에 찜한 명소를 보관하세요.</p><button class="primary" data-member-login>로그인하기</button></div>';container.querySelector('[data-member-login]').addEventListener('click',()=>{authMode='login';openAuth();});return;}
  if(!spots.length){container.innerHTML='<div class="favorite-empty"><span>♡</span><h2>아직 찜한 명소가 없어요</h2><p>AI 추천에서 하트를 누르면<br>관심 명소가 여기에 저장돼요.</p><button class="primary" data-open-recommend>AI 추천 둘러보기</button></div>';container.querySelector('[data-open-recommend]').addEventListener('click',()=>move('recommend'));return;}
  container.innerHTML=`<div class="favorite-list">${spots.map(spot=>`<article class="favorite-list-card" data-favorite-list-id="${spot.id}" role="button" tabindex="0"><img src="${spotImages[spot.name]||''}" alt="${spot.name}"><span><b>${spot.name}</b><small>${spot.district} · ${spot.theme}</small><em>현재 혼잡도 ${spot.crowd}% · ${crowdText(spot.crowd)}</em></span><button class="favorite-remove" type="button" aria-label="${spot.name} 찜 해제">♥</button></article>`).join('')}</div>`;
  container.querySelectorAll('.favorite-list-card').forEach(card=>{const spot=touristSpots.find(item=>item.id===card.dataset.favoriteListId);card.addEventListener('click',event=>{if(event.target.closest('.favorite-remove')){event.stopPropagation();toggleFavorite(spot);return;}openSpotDetail(spot);});card.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!event.target.closest('button')){event.preventDefault();openSpotDetail(spot);}});});
@@ -164,12 +174,12 @@ const couponRewards=[
 ];
 // 시연 초기화 링크: ?reset-stamps=1로 접속하면 이 기기의 스탬프만 한 번 초기화합니다.
 if(new URLSearchParams(location.search).get('reset-stamps')==='1'){
- localStorage.removeItem(stampStoreKey);
+ const resetKey=memberStoreKey(stampStoreKey);if(resetKey)localStorage.removeItem(resetKey);localStorage.removeItem(stampStoreKey);
  history.replaceState({},'',`${location.pathname}${location.hash}`);
 }
-const loadStamps=()=>{try{const saved=JSON.parse(localStorage.getItem(stampStoreKey)||'[]');return Array.isArray(saved)?saved:[];}catch{return[];}};
+const loadStamps=()=>{const key=memberStoreKey(stampStoreKey);if(!key)return[];try{const saved=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(saved)?saved:[];}catch{return[];}};
 let earnedStamps=loadStamps();
-const saveStamps=()=>localStorage.setItem(stampStoreKey,JSON.stringify(earnedStamps));
+const saveStamps=()=>{const key=memberStoreKey(stampStoreKey);if(key)localStorage.setItem(key,JSON.stringify(earnedStamps));};
 const distanceInMeters=(lat1,lng1,lat2,lng2)=>{const radius=6371000;const radians=value=>value*Math.PI/180;const dLat=radians(lat2-lat1),dLng=radians(lng2-lng1);const a=Math.sin(dLat/2)**2+Math.cos(radians(lat1))*Math.cos(radians(lat2))*Math.sin(dLng/2)**2;return radius*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));};
 function showToast(message){toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2400);}
 function renderStamp(){
@@ -194,6 +204,7 @@ function renderStamp(){
  couponList.innerHTML=couponRewards.map(reward=>{const available=earnedStamps.length>=reward.threshold;return `<article class="coupon-item ${available?'unlocked':''}"><span class="coupon-tier">${reward.threshold}+</span><div><b>${reward.title}</b><small>${available?'제휴 지역 상점에서 쿠폰 코드를 제시하세요.':`스탬프 ${Math.max(0,reward.threshold-earnedStamps.length)}개를 더 모으면 열려요.`}</small></div><span class="coupon-code ${available?'':'locked'}">${available?reward.code:'잠김'}</span></article>`;}).join('');
 }
 function earnStamp(spot,source){
+ if(!requireMemberFeature('스탬프 적립'))return;
  if(earnedStamps.includes(spot.id)){showToast(`${spot.name} 스탬프는 이미 적립됐어요.`);return;}
  if(earnedStamps.length>=stampLimit){showToast(`이번 달 스탬프 ${stampLimit}개를 모두 모았어요!`);return;}
  earnedStamps=[...earnedStamps,spot.id];saveStamps();renderStamp();showToast(`${source} ${spot.name} 스탬프를 적립했어요!`);
@@ -213,6 +224,9 @@ document.querySelector('#locationVerify').addEventListener('click',certifyCurren
 document.querySelector('#demoVerify').addEventListener('click',()=>{const selected=touristSpots.find(spot=>spot.id===document.querySelector('#demoPlace').value);if(selected)earnStamp(selected,'데모 인증 완료 ·');});
 document.querySelector('#couponButton').addEventListener('click',()=>{const list=document.querySelector('#couponList');if(!list)return;list.hidden=!list.hidden;document.querySelector('#couponButton').textContent=list.hidden?'쿠폰 목록':'목록 닫기';});
 renderStamp();
+function reloadMemberCollections(){
+ favoriteSpots=loadFavorites();earnedStamps=loadStamps();syncFavoriteUi();renderRecommendations(selectedFilter);renderFavorites();renderStamp();renderNotifications();
+}
 
 const notificationPanel=document.querySelector('#notificationPanel');
 const notificationButton=document.querySelector('#notificationButton');
@@ -318,8 +332,6 @@ refreshCrowdData();
 setInterval(refreshCrowdData,30000);
 
 // 시연용 계정 기능: 계정과 로그인 상태는 현재 브라우저에만 저장됩니다.
-const authUserKey='discovera-demo-user-v1';
-const authSessionKey='discovera-demo-session-v1';
 const authModal=document.querySelector('#authModal');
 const authDialog=authModal.querySelector('.auth-dialog');
 const authButton=document.querySelector('#authButton');
@@ -335,7 +347,8 @@ const accountSummary=document.querySelector('#accountSummary');
 const accountName=document.querySelector('#accountName');
 const accountEmail=document.querySelector('#accountEmail');
 let authMode='login';
-const savedUser=()=>{try{return JSON.parse(localStorage.getItem(authUserKey)||'null');}catch{return null;}};
+const savedUsers=()=>{try{const saved=JSON.parse(localStorage.getItem(authUserKey)||'[]');if(Array.isArray(saved))return saved;return saved?.email?[saved]:[];}catch{return[];}};
+const saveUsers=users=>localStorage.setItem(authUserKey,JSON.stringify(users));
 const activeUser=()=>{try{return JSON.parse(localStorage.getItem(authSessionKey)||'null');}catch{return null;}};
 function renderAuth(){
  const user=activeUser();
@@ -363,15 +376,16 @@ authForm.addEventListener('submit',event=>{
  if(authMode==='signup'){
   const name=authName.value.trim();
   if(!name||password.length<4){showToast('이름과 4자 이상의 비밀번호를 입력해 주세요.');return;}
-  const user={name,email,password};localStorage.setItem(authUserKey,JSON.stringify(user));localStorage.setItem(authSessionKey,JSON.stringify({name:user.name,email:user.email}));showToast(`${name}님, Discovera 가입을 환영해요!`);
+  const users=savedUsers();if(users.some(user=>user.email===email)){showToast('이미 가입된 이메일이에요. 로그인해 주세요.');return;}
+  const user={name,email,password};saveUsers([...users,user]);localStorage.setItem(authSessionKey,JSON.stringify({name:user.name,email:user.email}));showToast(`${name}님, Discovera 가입을 환영해요!`);
  }else{
-  const user=savedUser();
-  if(!user||user.email!==email||user.password!==password){showToast('이메일 또는 비밀번호를 다시 확인해 주세요.');return;}
+  const user=savedUsers().find(item=>item.email===email);
+  if(!user||user.password!==password){showToast('이메일 또는 비밀번호를 다시 확인해 주세요.');return;}
   localStorage.setItem(authSessionKey,JSON.stringify({name:user.name,email:user.email}));showToast(`${user.name}님, 다시 만나서 반가워요!`);
  }
- renderAuth();setTimeout(closeAuth,650);
+ reloadMemberCollections();renderAuth();setTimeout(closeAuth,650);
 });
-document.querySelector('#logoutButton').addEventListener('click',()=>{localStorage.removeItem(authSessionKey);authMode='login';renderAuth();closeAuth();showToast('로그아웃되었습니다.');});
+document.querySelector('#logoutButton').addEventListener('click',()=>{localStorage.removeItem(authSessionKey);authMode='login';reloadMemberCollections();renderAuth();closeAuth();if(document.querySelector('#stamp').classList.contains('active')||document.querySelector('#favorites').classList.contains('active'))move('home');showToast('로그아웃되었습니다.');});
 renderAuth();
 
 const purposeModal=document.querySelector('#purposeModal');
