@@ -197,9 +197,9 @@ document.querySelector('#detailMapButton').addEventListener('click',()=>{if(acti
 document.querySelector('#detailCourseButton').addEventListener('click',()=>{if(activeDetailSpot){closeSpotDetail();createCourseForSpot(activeDetailSpot);showToast(`${activeDetailSpot.name}을(를) 포함한 코스를 만들었어요.`);}});
 document.querySelector('#featuredRecommendation').addEventListener('click',event=>{if(!event.target.closest('button'))openSpotDetail(touristSpots.find(spot=>spot.id===event.currentTarget.dataset.spotId));});
 
-var crowdMap, spotMarkers=[], routeLine, routeStopMarkers=[];
-let selectedTransport='walk';
-const transportOptions={walk:{label:'도보',color:'#0a9680',dash:'7 9'},car:{label:'자동차',color:'#0878cf',dash:null},transit:{label:'버스·지하철',color:'#7357c9',dash:'14 7'},train:{label:'기차',color:'#e06452',dash:'3 8'}};
+var crowdMap, spotMarkers=[], routeLine, routeStopMarkers=[], routeRequestId=0;
+let selectedTransport='car';
+const transportOptions={walk:{label:'도보'},car:{label:'자동차',color:'#0878cf'},transit:{label:'버스·지하철'},train:{label:'기차'}};
 let focusedSpot=touristSpots.find(spot=>spot.name==='해운대해수욕장')||touristSpots[0];
 const crowdLevel=value=>value>=70?'high':value>=40?'medium':'low';
 const crowdText=value=>value>=70?'혼잡':value>=40?'보통':'여유';
@@ -207,19 +207,33 @@ const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 function updateMapPins(){spotMarkers.forEach(({spot,marker})=>{const level=crowdLevel(spot.crowd);marker.setIcon(L.divIcon({className:'',html:`<div class="crowd-marker ${level}">${spot.crowd}</div>`,iconSize:[34,34],iconAnchor:[17,17]}));marker.bindPopup(`<div class="map-popup"><b>${spot.name}</b><small>${spot.district} · 실시간 분석</small><strong>${spot.crowd}% · ${crowdText(spot.crowd)}</strong></div>`);});}
 function updateFocusedSpot(){document.querySelector('#placeTitle').textContent=focusedSpot.name;document.querySelector('#placeDensity').innerHTML=`${focusedSpot.crowd}% <em>${crowdText(focusedSpot.crowd)}</em>`;const alternative=touristSpots.filter(item=>item.district!==focusedSpot.district).sort((a,b)=>a.crowd-b.crowd)[0];document.querySelector('#placeAlt').textContent=`${alternative.name} · ${alternative.crowd}%`;}
 function openSpot(spot){focusedSpot=spot;updateFocusedSpot();}
-function updateMapRoute(fit=false){
+async function updateMapRoute(fit=false){
  if(!crowdMap||!window.L)return;
+ const requestId=++routeRequestId;
  if(routeLine){crowdMap.removeLayer(routeLine);routeLine=null;}
  routeStopMarkers.forEach(marker=>crowdMap.removeLayer(marker));routeStopMarkers=[];
  const requestedStops=getCurrentRouteStops();
  const stops=requestedStops.map(stop=>touristSpots.find(spot=>spot.name===stop[0])).filter(Boolean);
  const summary=document.querySelector('#routeMapSummary');
  if(stops.length<2||stops.length!==requestedStops.length){summary.textContent='정보를 제공할 수 없습니다. 선택한 코스의 일부 명소 지도 좌표가 없어요.';return;}
- const points=stops.map(spot=>[spot.lat,spot.lng]);
  const transport=transportOptions[selectedTransport];
- routeLine=L.polyline(points,{color:transport.color,weight:7,opacity:.95,lineCap:'round',lineJoin:'round',dashArray:transport.dash}).addTo(crowdMap);routeLine.bringToFront();
+ if(selectedTransport!=='car'){summary.textContent=`정보를 제공할 수 없습니다. ${transport.label} 실제 경로 데이터 API가 아직 연결되지 않았어요.`;return;}
+ summary.textContent='자동차 실제 도로 경로를 불러오는 중이에요.';
+ const coordinates=stops.map(spot=>`${spot.lng},${spot.lat}`).join(';');
+ try{
+  const response=await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=false`);
+  const payload=await response.json();
+  if(requestId!==routeRequestId)return;
+  const geometry=payload?.routes?.[0]?.geometry?.coordinates;
+  if(!response.ok||payload.code!=='Ok'||!Array.isArray(geometry)||geometry.length<2)throw new Error('no-route');
+  const points=geometry.map(([lng,lat])=>[lat,lng]);
+  routeLine=L.polyline(points,{color:transport.color,weight:7,opacity:.96,lineCap:'round',lineJoin:'round'}).addTo(crowdMap);routeLine.bringToFront();
+ }catch{
+  if(requestId!==routeRequestId)return;
+  summary.textContent='정보를 제공할 수 없습니다. 실제 자동차 경로를 불러오지 못했어요.';return;
+ }
  routeStopMarkers=stops.map((spot,index)=>L.marker([spot.lat,spot.lng],{icon:L.divIcon({className:'',html:`<span class="route-stop-marker ${index===0?'start':''}">${index+1}</span>`,iconSize:[25,25],iconAnchor:[12,12]})}).addTo(crowdMap).bindTooltip(`${index+1}. ${spot.name}`,{direction:'top',offset:[0,-12]}));
- summary.textContent=`${transport.label} · ${routeRegions[selectedRegion].label} 코스 ${stops.length}곳을 번호와 예상 이동선으로 표시했어요.`;
+ summary.textContent=`자동차 · ${routeRegions[selectedRegion].label} 코스 ${stops.length}곳을 실제 도로 경로로 표시했어요.`;
  if(fit)crowdMap.fitBounds(routeLine.getBounds(),{padding:[32,32],maxZoom:13});
 }
 function updateDashboard(){const average=Math.round(touristSpots.reduce((sum,spot)=>sum+spot.crowd,0)/touristSpots.length);document.querySelector('#averageDensity').innerHTML=`${average}<span>%</span>`;renderRecommendations(selectedFilter);renderFeaturedRecommendation();renderEquitySpotlight();renderCourse();renderNotifications();updateFocusedSpot();if(!document.querySelector('#searchPanel').hidden)renderSearch();}
@@ -227,7 +241,9 @@ function applyDemoCrowdVariation(){const phase=Math.floor(Date.now()/30000);tour
 function startBusanMap(){if(!window.L)return;crowdMap=L.map('busanMap',{zoomControl:false,attributionControl:true}).setView([35.165,129.065],11);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(crowdMap);L.control.zoom({position:'bottomright'}).addTo(crowdMap);spotMarkers=touristSpots.map(spot=>{const marker=L.marker([spot.lat,spot.lng]).addTo(crowdMap);marker.on('click',()=>openSpot(spot));return{spot,marker};});updateMapPins();updateMapRoute();}
 async function refreshCrowdData(){let usesLiveApi=false;try{const response=await fetch('/api/crowd');if(!response.ok)throw new Error('fallback');const payload=await response.json();const incoming=new Map(payload.places.map(item=>[item.id,item.crowd]));touristSpots.forEach(spot=>{if(incoming.has(spot.id))spot.crowd=incoming.get(spot.id);});usesLiveApi=true;}catch{applyDemoCrowdVariation();}updateMapPins();updateDashboard();const current=new Date();const label=`${String(current.getHours()).padStart(2,'0')}:${String(current.getMinutes()).padStart(2,'0')} 갱신`;document.querySelector('#syncTime').textContent=label;document.querySelector('#updatedAt').textContent=`${label} · ${usesLiveApi?'실시간 데이터':'시연 데이터'}`;}
 startBusanMap();
-document.querySelectorAll('#transportModes button').forEach(button=>button.addEventListener('click',()=>{selectedTransport=button.dataset.transport;document.querySelectorAll('#transportModes button').forEach(item=>item.classList.toggle('active',item===button));updateMapRoute(true);}));
+const transportButtons=document.querySelectorAll('#transportModes button');
+transportButtons.forEach(button=>button.classList.toggle('active',button.dataset.transport===selectedTransport));
+transportButtons.forEach(button=>button.addEventListener('click',()=>{selectedTransport=button.dataset.transport;transportButtons.forEach(item=>item.classList.toggle('active',item===button));updateMapRoute(true);}));
 refreshCrowdData();
 setInterval(refreshCrowdData,30000);
 
