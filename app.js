@@ -1,5 +1,9 @@
 const density={해운대해수욕장:['82% · 혼잡','청사포 · 19%'],광안리해수욕장:['76% · 혼잡','수영사적공원 · 22%'],서면:['51% · 보통','전포카페거리 · 29%'],흰여울문화마을:['24% · 여유','절영해안산책로 · 19%'],삼락생태공원:['18% · 여유','화명생태공원 · 16%']};
 const cards=document.querySelector('#smallCards');
+if(new URLSearchParams(location.search).get('reset-all')==='1'){
+ Object.keys(localStorage).filter(key=>key.startsWith('discovera-')).forEach(key=>localStorage.removeItem(key));
+ history.replaceState({},'',`${location.pathname}#home`);
+}
 const authUserKey='discovera-demo-user-v1';
 const authSessionKey='discovera-demo-session-v1';
 const currentMember=()=>{try{return JSON.parse(localStorage.getItem(authSessionKey)||'null');}catch{return null;}};
