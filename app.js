@@ -185,3 +185,60 @@ async function refreshCrowdData(){let usesLiveApi=false;try{const response=await
 startBusanMap();
 refreshCrowdData();
 setInterval(refreshCrowdData,30000);
+
+// 시연용 계정 기능: 계정과 로그인 상태는 현재 브라우저에만 저장됩니다.
+const authUserKey='discovera-demo-user-v1';
+const authSessionKey='discovera-demo-session-v1';
+const authModal=document.querySelector('#authModal');
+const authDialog=authModal.querySelector('.auth-dialog');
+const authButton=document.querySelector('#authButton');
+const authForm=document.querySelector('#authForm');
+const authSwitch=document.querySelector('#authSwitch');
+const authTitle=document.querySelector('#authTitle');
+const authCopy=document.querySelector('#authCopy');
+const authSubmit=document.querySelector('#authSubmit');
+const authName=document.querySelector('#authName');
+const authEmail=document.querySelector('#authEmail');
+const authPassword=document.querySelector('#authPassword');
+const accountSummary=document.querySelector('#accountSummary');
+const accountName=document.querySelector('#accountName');
+const accountEmail=document.querySelector('#accountEmail');
+let authMode='login';
+const savedUser=()=>{try{return JSON.parse(localStorage.getItem(authUserKey)||'null');}catch{return null;}};
+const activeUser=()=>{try{return JSON.parse(localStorage.getItem(authSessionKey)||'null');}catch{return null;}};
+function renderAuth(){
+ const user=activeUser();
+ authButton.textContent=user?`${user.name}님`:'로그인';
+ authDialog.classList.toggle('is-account',Boolean(user));
+ authDialog.classList.toggle('is-login',authMode==='login');
+ accountSummary.hidden=!user;
+ if(user){accountName.textContent=`${user.name}님, 반가워요!`;accountEmail.textContent=user.email;return;}
+ authTitle.textContent=authMode==='login'?'Discovera에 로그인':'Discovera 회원가입';
+ authCopy.textContent=authMode==='login'?'나만의 여행 코스와 스탬프를 이어서 확인하세요.':'간단한 가입으로 나만의 부산 여행을 시작해 보세요.';
+ authSubmit.textContent=authMode==='login'?'로그인':'회원가입';
+ authSwitch.textContent=authMode==='login'?'처음이신가요? 회원가입':'이미 계정이 있나요? 로그인';
+ authName.required=authMode==='signup';
+ authPassword.autocomplete=authMode==='login'?'current-password':'new-password';
+}
+function openAuth(){authModal.hidden=false;renderAuth();if(!activeUser())setTimeout(()=>(authMode==='signup'?authName:authEmail).focus(),50);}
+function closeAuth(){authModal.hidden=true;authForm.reset();}
+authButton.addEventListener('click',openAuth);
+document.querySelector('#closeAuth').addEventListener('click',closeAuth);
+document.querySelector('#authBackdrop').addEventListener('click',closeAuth);
+authSwitch.addEventListener('click',()=>{authMode=authMode==='login'?'signup':'login';renderAuth();});
+authForm.addEventListener('submit',event=>{
+ event.preventDefault();
+ const email=authEmail.value.trim().toLowerCase(),password=authPassword.value;
+ if(authMode==='signup'){
+  const name=authName.value.trim();
+  if(!name||password.length<4){showToast('이름과 4자 이상의 비밀번호를 입력해 주세요.');return;}
+  const user={name,email,password};localStorage.setItem(authUserKey,JSON.stringify(user));localStorage.setItem(authSessionKey,JSON.stringify({name:user.name,email:user.email}));showToast(`${name}님, Discovera 가입을 환영해요!`);
+ }else{
+  const user=savedUser();
+  if(!user||user.email!==email||user.password!==password){showToast('이메일 또는 비밀번호를 다시 확인해 주세요.');return;}
+  localStorage.setItem(authSessionKey,JSON.stringify({name:user.name,email:user.email}));showToast(`${user.name}님, 다시 만나서 반가워요!`);
+ }
+ renderAuth();setTimeout(closeAuth,650);
+});
+document.querySelector('#logoutButton').addEventListener('click',()=>{localStorage.removeItem(authSessionKey);authMode='login';renderAuth();closeAuth();showToast('로그아웃되었습니다.');});
+renderAuth();
