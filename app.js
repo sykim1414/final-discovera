@@ -18,8 +18,9 @@ document.querySelector('.bottom-nav').insertAdjacentHTML('beforebegin','<section
 document.querySelector('.detail-actions').classList.add('has-favorite');
 document.querySelector('.detail-actions').insertAdjacentHTML('afterbegin','<button class="outline detail-favorite" id="detailFavoriteButton" type="button">♡ 찜하기</button>');
 const pages=document.querySelectorAll('.page'),navs=document.querySelectorAll('.nav'),toast=document.querySelector('.toast');
-function move(id){if((id==='favorites'||id==='stamp')&&!requireMemberFeature(id==='favorites'?'찜 목록':'스탬프와 쿠폰'))return;pages.forEach(p=>p.classList.toggle('active',p.id===id));navs.forEach(n=>n.classList.toggle('active',n.dataset.go===id));document.querySelector('.app-shell').scrollTop=0;if(id==='map'&&crowdMap)setTimeout(()=>crowdMap.invalidateSize(),0);if(id==='favorites')renderFavorites();}
+function move(id){if((id==='favorites'||id==='stamp'||id==='history')&&!requireMemberFeature(id==='favorites'?'찜 목록':id==='history'?'여행 기록':'스탬프와 쿠폰'))return;pages.forEach(p=>p.classList.toggle('active',p.id===id));navs.forEach(n=>n.classList.toggle('active',n.dataset.go===id));document.querySelector('.app-shell').scrollTop=0;if(id==='map'&&crowdMap)setTimeout(()=>crowdMap.invalidateSize(),0);if(id==='favorites')renderFavorites();if(id==='history')renderTravelHistory();}
 document.querySelectorAll('[data-go]').forEach(button=>button.addEventListener('click',()=>move(button.dataset.go)));
+document.querySelector('#brandHome').addEventListener('click',event=>{event.preventDefault();move('home');window.history.replaceState({},'',`${location.pathname}${location.search}#home`);});
 const weatherCodes={0:['맑음','☀'],1:['대체로 맑음','🌤'],2:['구름 조금','⛅'],3:['흐림','☁'],45:['안개','🌫'],48:['안개','🌫'],51:['약한 이슬비','🌦'],53:['이슬비','🌦'],55:['강한 이슬비','🌧'],61:['약한 비','🌦'],63:['비','🌧'],65:['강한 비','🌧'],71:['약한 눈','🌨'],73:['눈','🌨'],75:['강한 눈','❄'],80:['소나기','🌦'],81:['소나기','🌧'],82:['강한 소나기','⛈'],95:['뇌우','⛈'],96:['우박·뇌우','⛈'],99:['강한 우박·뇌우','⛈']};
 const busanEvents=[
  {state:'진행 중',title:'2026 북항 오션 SUP FESTA',date:'7.31 – 8.9',place:'부산항 북항 일원',note:'바다 위 SUP 체험과 북항의 여름 풍경을 함께 즐겨요.'},
@@ -82,7 +83,7 @@ function renderCourse(){
  const title=requestedSpot?`${requestedSpot.name}을(를) 담은 ${region.label} 코스`:region.title;
  const description=requestedSpot?`선택한 ${requestedSpot.name}을(를) 첫 방문지로 넣고, 가까운 명소를 이어 드려요.`:plan.description;
  document.querySelector('#courseCard').innerHTML=`<div class="course-top"><span>${plan.label} AI 추천 코스 · ${region.label}</span><b>${plan.meta}</b></div><h2>${title}</h2><p>${description}<br />${region.districts} 명소를 중심으로 구성했어요.</p><ol>${stops.map((stop,index)=>`<li><time>${plan.times[index]}</time><i class="timeline-dot" aria-hidden="true"></i><span><b>${stop[0]}</b><small>${routeCrowd(stop[0])} · ${stop[1]}</small></span></li>`).join('')}</ol><button class="outline course-map-button">지도에서 코스 보기</button><button class="primary route-start">이 코스로 여행 시작하기</button></article>`;
- document.querySelector('.route-start').addEventListener('click',()=>move('stamp'));
+ document.querySelector('.route-start').addEventListener('click',()=>{if(!requireMemberFeature('여행 코스 저장'))return;saveTravelActivity({type:'course',title,region:region.label,duration:plan.label,note:stops.map(stop=>stop[0]).join(' → ')});showToast(`${title} 코스를 여행 기록에 저장했어요.`);move('stamp');});
  document.querySelector('.course-map-button').addEventListener('click',()=>{move('map');setTimeout(()=>{updateMapRoute(true);crowdMap&&crowdMap.invalidateSize();},0);});
  if(crowdMap)updateMapRoute();
 }
@@ -111,10 +112,14 @@ let travelPurpose=travelPurposes[localStorage.getItem(purposeStoreKey)]||travelP
 const purposeMatch=spot=>travelPurpose.theme===spot.theme?1:0;
 const equityFirst=(a,b)=>(Number(isEquitySpot(b))-Number(isEquitySpot(a)))||(purposeMatch(b)-purposeMatch(a))||(a.crowd-b.crowd);
 const favoriteStoreKey='discovera-favorites-v1';
+const travelRecordStoreKey='discovera-travel-records-v1';
 const loadFavorites=()=>{const key=memberStoreKey(favoriteStoreKey);if(!key)return new Set();try{const saved=JSON.parse(localStorage.getItem(key)||'[]');return new Set(Array.isArray(saved)?saved:[]);}catch{return new Set();}};
+const loadTravelRecords=()=>{const key=memberStoreKey(travelRecordStoreKey);if(!key)return[];try{const saved=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(saved)?saved:[];}catch{return[];}};
 let favoriteSpots=loadFavorites();
+let travelRecords=loadTravelRecords();
 const isFavorite=spot=>favoriteSpots.has(spot.id);
 const saveFavorites=()=>{const key=memberStoreKey(favoriteStoreKey);if(key)localStorage.setItem(key,JSON.stringify([...favoriteSpots]));};
+function saveTravelActivity(activity){const key=memberStoreKey(travelRecordStoreKey);if(!key)return;travelRecords=[{...activity,id:`record-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,createdAt:new Date().toISOString()},...travelRecords].slice(0,100);localStorage.setItem(key,JSON.stringify(travelRecords));}
 function syncFavoriteUi(){
  const badge=document.querySelector('#favoriteBadge');badge.textContent=currentMember()&&favoriteSpots.size?String(favoriteSpots.size):'';
  const featured=touristSpots.find(spot=>spot.id===document.querySelector('#featuredRecommendation').dataset.spotId),heart=document.querySelector('#featuredRecommendation .heart');
@@ -207,7 +212,7 @@ function earnStamp(spot,source){
  if(!requireMemberFeature('스탬프 적립'))return;
  if(earnedStamps.includes(spot.id)){showToast(`${spot.name} 스탬프는 이미 적립됐어요.`);return;}
  if(earnedStamps.length>=stampLimit){showToast(`이번 달 스탬프 ${stampLimit}개를 모두 모았어요!`);return;}
- earnedStamps=[...earnedStamps,spot.id];saveStamps();renderStamp();showToast(`${source} ${spot.name} 스탬프를 적립했어요!`);
+ earnedStamps=[...earnedStamps,spot.id];saveStamps();saveTravelActivity({type:'visit',spotId:spot.id,title:spot.name,district:spot.district,note:`${spot.theme} 명소 방문 인증`});renderStamp();renderTravelHistory();showToast(`${source} ${spot.name} 스탬프를 적립했어요!`);
 }
 function certifyCurrentLocation(){
  if(!navigator.geolocation){showToast('이 브라우저에서는 위치 인증을 지원하지 않아요. 데모 인증을 이용해 주세요.');return;}
@@ -225,7 +230,21 @@ document.querySelector('#demoVerify').addEventListener('click',()=>{const select
 document.querySelector('#couponButton').addEventListener('click',()=>{const list=document.querySelector('#couponList');if(!list)return;list.hidden=!list.hidden;document.querySelector('#couponButton').textContent=list.hidden?'쿠폰 목록':'목록 닫기';});
 renderStamp();
 function reloadMemberCollections(){
- favoriteSpots=loadFavorites();earnedStamps=loadStamps();syncFavoriteUi();renderRecommendations(selectedFilter);renderFavorites();renderStamp();renderNotifications();
+ favoriteSpots=loadFavorites();earnedStamps=loadStamps();travelRecords=loadTravelRecords();syncFavoriteUi();renderRecommendations(selectedFilter);renderFavorites();renderStamp();renderNotifications();renderTravelHistory();
+}
+function historyDate(value){if(!value)return '이전 방문 기록';const date=new Date(value);return Number.isNaN(date.getTime())?'이전 기록':new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(date);}
+function renderTravelHistory(){
+ const user=currentMember(),timeline=document.querySelector('#historyTimeline'),summary=document.querySelector('#historySummary');
+ if(!timeline||!summary)return;
+ if(!user){document.querySelector('#historyMemberName').textContent='로그인이 필요해요';document.querySelector('#historyMemberEmail').textContent='';summary.innerHTML='';timeline.innerHTML='<div class="history-empty"><span>♙</span><b>회원 전용 여행 기록이에요</b><p>로그인하면 나만의 방문과 코스 기록을 확인할 수 있어요.</p></div>';return;}
+ document.querySelector('#historyMemberName').textContent=`${user.name}님의 부산 기록`;document.querySelector('#historyMemberEmail').textContent=user.email;
+ const courseCount=travelRecords.filter(record=>record.type==='course').length,unlockedCoupons=couponRewards.filter(reward=>earnedStamps.length>=reward.threshold).length;
+ summary.innerHTML=`<article class="history-stat"><span>방문한 명소</span><b>${earnedStamps.length}곳</b></article><article class="history-stat"><span>저장한 코스</span><b>${courseCount}개</b></article><article class="history-stat"><span>찜한 명소</span><b>${favoriteSpots.size}곳</b></article><article class="history-stat"><span>사용 가능 쿠폰</span><b>${unlockedCoupons}장</b></article>`;
+ const recordedVisits=new Set(travelRecords.filter(record=>record.type==='visit').map(record=>record.spotId));
+ const previousVisits=earnedStamps.filter(id=>!recordedVisits.has(id)).map(id=>{const spot=touristSpots.find(item=>item.id===id);return spot?{type:'visit',spotId:id,title:spot.name,district:spot.district,note:'기존 스탬프 방문 기록',createdAt:null}:null;}).filter(Boolean);
+ const records=[...travelRecords,...previousVisits].sort((a,b)=>(b.createdAt?new Date(b.createdAt).getTime():0)-(a.createdAt?new Date(a.createdAt).getTime():0));
+ if(!records.length){timeline.innerHTML='<div class="history-empty"><span>⌖</span><b>아직 저장된 여행이 없어요</b><p>코스를 시작하거나 명소에서 방문 인증을 하면<br>여기에 여행 기록이 쌓여요.</p></div>';return;}
+ timeline.innerHTML=records.map(record=>`<article class="history-entry ${record.type==='course'?'course':'visit'}"><span class="history-entry-icon">${record.type==='course'?'⌁':'✓'}</span><div><b>${record.title}</b><p>${record.type==='course'?`${record.duration} · ${record.region}<br>${record.note}`:`${record.district} · ${record.note}`}</p><time>${historyDate(record.createdAt)}</time></div></article>`).join('');
 }
 
 const notificationPanel=document.querySelector('#notificationPanel');
@@ -367,6 +386,7 @@ function renderAuth(){
 function openAuth(){authModal.hidden=false;renderAuth();if(!activeUser())setTimeout(()=>(authMode==='signup'?authName:authEmail).focus(),50);}
 function closeAuth(){authModal.hidden=true;authForm.reset();}
 authButton.addEventListener('click',openAuth);
+document.querySelector('#travelHistoryButton').addEventListener('click',()=>{closeAuth();move('history');});
 document.querySelector('#closeAuth').addEventListener('click',closeAuth);
 document.querySelector('#authBackdrop').addEventListener('click',closeAuth);
 authSwitch.addEventListener('click',()=>{authMode=authMode==='login'?'signup':'login';renderAuth();});
@@ -385,7 +405,7 @@ authForm.addEventListener('submit',event=>{
  }
  reloadMemberCollections();renderAuth();setTimeout(closeAuth,650);
 });
-document.querySelector('#logoutButton').addEventListener('click',()=>{localStorage.removeItem(authSessionKey);authMode='login';reloadMemberCollections();renderAuth();closeAuth();if(document.querySelector('#stamp').classList.contains('active')||document.querySelector('#favorites').classList.contains('active'))move('home');showToast('로그아웃되었습니다.');});
+document.querySelector('#logoutButton').addEventListener('click',()=>{localStorage.removeItem(authSessionKey);authMode='login';reloadMemberCollections();renderAuth();closeAuth();if(document.querySelector('#stamp').classList.contains('active')||document.querySelector('#favorites').classList.contains('active')||document.querySelector('#history').classList.contains('active'))move('home');showToast('로그아웃되었습니다.');});
 renderAuth();
 
 const purposeModal=document.querySelector('#purposeModal');
