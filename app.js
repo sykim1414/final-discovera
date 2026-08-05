@@ -199,7 +199,7 @@ document.querySelector('#featuredRecommendation').addEventListener('click',event
 
 var crowdMap, spotMarkers=[], routeLine, routeStopMarkers=[], routeRequestId=0;
 let selectedTransport='car';
-const transportOptions={walk:{label:'도보'},car:{label:'자동차',color:'#0878cf'},transit:{label:'버스·지하철'}};
+const transportOptions={car:{label:'자동차',color:'#0878cf'}};
 let focusedSpot=touristSpots.find(spot=>spot.name==='해운대해수욕장')||touristSpots[0];
 const crowdLevel=value=>value>=70?'high':value>=40?'medium':'low';
 const crowdText=value=>value>=70?'혼잡':value>=40?'보통':'여유';
@@ -217,7 +217,6 @@ async function updateMapRoute(fit=false){
  const summary=document.querySelector('#routeMapSummary');
  if(stops.length<2||stops.length!==requestedStops.length){summary.textContent='정보를 제공할 수 없습니다. 선택한 코스의 일부 명소 지도 좌표가 없어요.';return;}
  const transport=transportOptions[selectedTransport];
- if(selectedTransport!=='car'){summary.textContent=`정보를 제공할 수 없습니다. ${transport.label} 실제 경로 데이터 API가 아직 연결되지 않았어요.`;return;}
  summary.textContent='자동차 실제 도로 경로를 불러오는 중이에요.';
  const coordinates=stops.map(spot=>`${spot.lng},${spot.lat}`).join(';');
  try{
