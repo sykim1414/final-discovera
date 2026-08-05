@@ -102,7 +102,13 @@ renderEquitySpotlight();
 renderCourse();
 
 const stampStoreKey='discovera-demo-stamps-v1';
-const stampLimit=12;
+const stampLimit=touristSpots.length;
+const couponRewards=[
+ {threshold:3,title:'지역 카페·베이커리 10% 할인',code:'DISCOVERA10'},
+ {threshold:6,title:'전통시장 먹거리 2,000원 할인',code:'BUSANMARKET'},
+ {threshold:9,title:'지역 체험·전시 15% 할인',code:'LOCAL15'},
+ {threshold:12,title:'부산 로컬 패스 5,000원 할인',code:'BUSANPASS'}
+];
 // 시연 초기화 링크: ?reset-stamps=1로 접속하면 이 기기의 스탬프만 한 번 초기화합니다.
 if(new URLSearchParams(location.search).get('reset-stamps')==='1'){
  localStorage.removeItem(stampStoreKey);
@@ -118,14 +124,21 @@ function renderStamp(){
  const picker=document.querySelector('#demoPlace');
  document.querySelector('#stampCount').innerHTML=`${String(earnedStamps.length).padStart(2,'0')}<small>/ ${stampLimit}</small>`;
  picker.innerHTML=touristSpots.map(spot=>`<option value="${spot.id}">${spot.district} · ${spot.name}</option>`).join('');
- const visited=earnedStamps.map(id=>touristSpots.find(spot=>spot.id===id)).filter(Boolean);
- const cards=[...visited.slice(0,6),...Array(Math.max(0,6-visited.length)).fill(null)];
- grid.innerHTML=cards.map(spot=>spot?`<div class="earned">✓<span>${spot.name}</span></div>`:'<div>＋<span>다음 여행</span></div>').join('');
+ grid.classList.add('stamp-collection');
+ const stampHeading=grid.previousElementSibling;
+ if(stampHeading&&stampHeading.classList.contains('subheading'))stampHeading.textContent=`전체 명소 스탬프 · ${earnedStamps.length} / ${stampLimit}`;
+ if(!document.querySelector('#stampCollectionIntro')){
+  const intro=document.createElement('p');intro.id='stampCollectionIntro';intro.className='stamp-collection-intro';intro.innerHTML='<b>부산 16개 구·군 스탬프 투어</b>현재 등록된 모든 명소를 방문 인증해 나만의 부산 패스포트를 완성해 보세요.';grid.insertAdjacentElement('beforebegin',intro);
+ }
+ grid.innerHTML=touristSpots.map(spot=>earnedStamps.includes(spot.id)?`<div class="earned">✓<span>${spot.district}</span><em>${spot.name}</em></div>`:`<div>＋<span>${spot.district}</span><em>${spot.name}</em></div>`).join('');
  const unlocked=earnedStamps.length>=3;
  const status=document.querySelector('#couponStatus'),text=document.querySelector('#couponText'),button=document.querySelector('#couponButton'),card=document.querySelector('#couponCard');
  status.textContent=unlocked?'스탬프 3개 달성 · 쿠폰 사용 가능':`스탬프 ${Math.max(0,3-earnedStamps.length)}개 더 모으면 리워드 해제`;
- text.textContent=unlocked?'쿠폰 코드 DISCOVERA10 · 제휴 지역 상점에서 제시하세요.':'방문 인증 후 지역 상권 할인 쿠폰이 열려요.';
- button.disabled=!unlocked;button.textContent=unlocked?'쿠폰 보기':'잠김';card.classList.toggle('coupon-unlocked',unlocked);
+ text.textContent=unlocked?'보유 쿠폰과 다음 리워드를 목록에서 확인하세요.':'방문 인증 후 지역 상권 할인 쿠폰이 열려요.';
+ button.disabled=!unlocked;button.textContent=unlocked?'쿠폰 목록':'잠김';card.classList.toggle('coupon-unlocked',unlocked);
+ let couponList=document.querySelector('#couponList');
+ if(!couponList){couponList=document.createElement('section');couponList.id='couponList';couponList.className='coupon-list';couponList.hidden=true;card.insertAdjacentElement('afterend',couponList);}
+ couponList.innerHTML=couponRewards.map(reward=>{const available=earnedStamps.length>=reward.threshold;return `<article class="coupon-item ${available?'unlocked':''}"><span class="coupon-tier">${reward.threshold}+</span><div><b>${reward.title}</b><small>${available?'제휴 지역 상점에서 쿠폰 코드를 제시하세요.':`스탬프 ${Math.max(0,reward.threshold-earnedStamps.length)}개를 더 모으면 열려요.`}</small></div><span class="coupon-code ${available?'':'locked'}">${available?reward.code:'잠김'}</span></article>`;}).join('');
 }
 function earnStamp(spot,source){
  if(earnedStamps.includes(spot.id)){showToast(`${spot.name} 스탬프는 이미 적립됐어요.`);return;}
@@ -145,7 +158,7 @@ function certifyCurrentLocation(){
 }
 document.querySelector('#locationVerify').addEventListener('click',certifyCurrentLocation);
 document.querySelector('#demoVerify').addEventListener('click',()=>{const selected=touristSpots.find(spot=>spot.id===document.querySelector('#demoPlace').value);if(selected)earnStamp(selected,'데모 인증 완료 ·');});
-document.querySelector('#couponButton').addEventListener('click',()=>showToast('쿠폰 코드 DISCOVERA10 · 지역 제휴 상점 10% 할인'));
+document.querySelector('#couponButton').addEventListener('click',()=>{const list=document.querySelector('#couponList');if(!list)return;list.hidden=!list.hidden;document.querySelector('#couponButton').textContent=list.hidden?'쿠폰 목록':'목록 닫기';});
 renderStamp();
 
 const notificationPanel=document.querySelector('#notificationPanel');
