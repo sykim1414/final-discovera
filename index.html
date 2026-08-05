@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="search.css" />
   <link rel="stylesheet" href="route-map.css" />
   <link rel="stylesheet" href="stamp-collection.css" />
-  <link rel="stylesheet" href="city-info.css" />
+  <link rel="stylesheet" href="city-info.css?v=20260805-event-detail" />
   <link rel="stylesheet" href="favorites.css" />
   <link rel="stylesheet" href="travel-history.css" />
   <link rel="stylesheet" href="overlay-fix.css?v=20260805" />
@@ -42,6 +42,11 @@
       <button class="detail-close" id="closeSpotDetail" aria-label="명소 상세 닫기">×</button>
       <img id="detailImage" alt="" />
       <div class="detail-copy"><span class="pill calm" id="detailCrowd"></span><h2 id="detailName"></h2><p id="detailDistrict"></p><p id="detailDescription"></p><div class="detail-tags"><span id="detailTheme"></span><span id="detailReason"></span></div><section class="ai-reason" aria-labelledby="aiReasonTitle"><div class="ai-reason-head"><span>✦</span><h3 id="aiReasonTitle">AI가 이곳을 추천한 이유</h3></div><ul id="aiReasonList"></ul><small>혼잡도·테마·이동 동선·제휴 상점 정보를 종합한 시연 분석입니다.</small></section><div class="detail-actions"><button class="outline" id="detailMapButton">지도에서 보기</button><button class="primary" id="detailCourseButton">코스 만들기</button></div></div>
+    </section>
+    <section class="event-detail-panel" id="eventDetailPanel" aria-label="축제 및 행사 상세 정보" hidden>
+      <button class="event-detail-close" id="closeEventDetail" aria-label="행사 상세 닫기">×</button>
+      <div class="event-detail-hero"><p>BUSAN EVENT GUIDE</p><span id="eventDetailState"></span><h2 id="eventDetailTitle"></h2></div>
+      <div class="event-detail-copy"><dl><div><dt>기간</dt><dd id="eventDetailDate"></dd></div><div><dt>장소</dt><dd id="eventDetailPlace"></dd></div></dl><section><h3>행사 소개</h3><p id="eventDetailDescription"></p></section><section class="event-detail-tip"><span>✦</span><div><b>Discovera 여행 팁</b><p id="eventDetailTip"></p></div></section><a class="primary event-detail-link" id="eventOfficialLink" href="https://www.visitbusan.net/kr/schedule/list.do?boardId=BBS_0000009&amp;menuCd=DOM_000000204012000000&amp;month=8&amp;year=2026" target="_blank" rel="noopener">공식 일정 확인하기</a></div>
     </section>
     <section class="search-panel" id="searchPanel" aria-label="명소 검색" hidden>
       <div class="search-head"><button class="search-close" id="closeSearch" aria-label="검색 닫기">×</button><h2>부산 명소 검색</h2><p>명소명, 구·군, 여행 테마를 입력해 보세요.</p></div>
@@ -185,6 +190,6 @@
   </section>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=20260805-reset-all"></script>
+<script src="app.js?v=20260805-event-detail"></script>
 </body>
 </html>

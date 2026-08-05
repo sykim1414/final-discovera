@@ -27,10 +27,10 @@ document.querySelectorAll('[data-go]').forEach(button=>button.addEventListener('
 document.querySelector('#brandHome').addEventListener('click',event=>{event.preventDefault();move('home');window.history.replaceState({},'',`${location.pathname}${location.search}#home`);});
 const weatherCodes={0:['맑음','☀'],1:['대체로 맑음','🌤'],2:['구름 조금','⛅'],3:['흐림','☁'],45:['안개','🌫'],48:['안개','🌫'],51:['약한 이슬비','🌦'],53:['이슬비','🌦'],55:['강한 이슬비','🌧'],61:['약한 비','🌦'],63:['비','🌧'],65:['강한 비','🌧'],71:['약한 눈','🌨'],73:['눈','🌨'],75:['강한 눈','❄'],80:['소나기','🌦'],81:['소나기','🌧'],82:['강한 소나기','⛈'],95:['뇌우','⛈'],96:['우박·뇌우','⛈'],99:['강한 우박·뇌우','⛈']};
 const busanEvents=[
- {state:'진행 중',title:'2026 북항 오션 SUP FESTA',date:'7.31 – 8.9',place:'부산항 북항 일원',note:'바다 위 SUP 체험과 북항의 여름 풍경을 함께 즐겨요.'},
- {state:'곧 시작',title:'제30회 부산바다축제',date:'8.7 – 8.13',place:'다대포해수욕장 일원',note:'다대포 선셋과 함께하는 부산 대표 여름 축제예요.'},
- {state:'예정',title:'2026 세계도서관정보대회',date:'8.10 – 8.13',place:'부산 일원',note:'세계의 도서관과 지식 문화를 부산에서 만나요.'},
- {state:'예정',title:'부산인디커넥트페스티벌 2026',date:'8.14 – 8.16',place:'부산 일원',note:'다양한 인디게임과 개발자를 만나는 글로벌 행사예요.'}
+ {state:'진행 중',title:'2026 북항 오션 SUP FESTA',date:'7.31 – 8.9',place:'부산항 북항 일원',note:'바다 위 SUP 체험과 북항의 여름 풍경을 함께 즐겨요.',detail:'부산항 북항에서 해양 레저를 경험하고, 항만의 여름 야경과 수변 공간을 함께 즐길 수 있는 행사예요.',tip:'북항 주변 명소를 함께 둘러보기 좋으며, 방문 전 혼잡지도의 부산항 북항 상태를 확인해 보세요.'},
+ {state:'곧 시작',title:'제30회 부산바다축제',date:'8.7 – 8.13',place:'다대포해수욕장 일원',note:'다대포 선셋과 함께하는 부산 대표 여름 축제예요.',detail:'다대포해수욕장 일원에서 바다와 노을을 배경으로 부산의 여름 분위기를 만나는 대표 축제예요.',tip:'해 질 무렵에는 방문객이 늘 수 있어요. 다대포해수욕장 혼잡도와 주변 대체 명소를 함께 확인해 보세요.'},
+ {state:'예정',title:'2026 세계도서관정보대회',date:'8.10 – 8.13',place:'부산 일원',note:'세계의 도서관과 지식 문화를 부산에서 만나요.',detail:'도서관과 지식 문화에 관한 국내외 교류가 부산 곳곳에서 이어지는 국제 행사예요.',tip:'세부 장소와 프로그램은 변경될 수 있으니 방문 직전에 공식 일정을 확인해 주세요.'},
+ {state:'예정',title:'부산인디커넥트페스티벌 2026',date:'8.14 – 8.16',place:'부산 일원',note:'다양한 인디게임과 개발자를 만나는 글로벌 행사예요.',detail:'독창적인 인디게임을 체험하고 개발자와 관람객이 교류하는 게임 문화 행사예요.',tip:'실내 행사 관람 전후에는 전포카페거리·서면 등 도심 명소와 연결한 코스를 만들어 보세요.'}
 ];
 let weatherLoaded=false;
 function weatherLabel(code){return weatherCodes[code]||['날씨 정보','◌'];}
@@ -47,7 +47,11 @@ async function loadBusanWeather(){
   const homeSummary=document.querySelector('#homeWeatherSummary');if(homeSummary)homeSummary.textContent=`${description} · ${Math.round(current.temperature_2m)}°`;
  }catch(error){panel.innerHTML='<div class="weather-error">날씨 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.</div>';weatherLoaded=false;}
 }
-function renderEvents(){const list=document.querySelector('#eventList');if(list)list.innerHTML=busanEvents.map(event=>`<article class="event-card"><div class="event-card-top"><span class="event-state">${event.state}</span><strong>${event.date}</strong></div><h2>${event.title}</h2><p>${event.note}</p><strong>⌖ ${event.place}</strong></article>`).join('');}
+const eventDetailPanel=document.querySelector('#eventDetailPanel');
+function closeEventDetail(){eventDetailPanel.hidden=true;}
+function openEventDetail(event){document.querySelector('#eventDetailState').textContent=event.state;document.querySelector('#eventDetailTitle').textContent=event.title;document.querySelector('#eventDetailDate').textContent=event.date;document.querySelector('#eventDetailPlace').textContent=event.place;document.querySelector('#eventDetailDescription').textContent=event.detail;document.querySelector('#eventDetailTip').textContent=event.tip;eventDetailPanel.hidden=false;eventDetailPanel.scrollTop=0;}
+function renderEvents(){const list=document.querySelector('#eventList');if(!list)return;list.innerHTML=busanEvents.map((event,index)=>`<button class="event-card" type="button" data-event-index="${index}" aria-label="${event.title} 상세 정보 보기"><div class="event-card-top"><span class="event-state">${event.state}</span><strong>${event.date}</strong></div><h2>${event.title}</h2><p>${event.note}</p><strong>⌖ ${event.place}</strong><em>상세 보기 ›</em></button>`).join('');list.querySelectorAll('[data-event-index]').forEach(button=>button.addEventListener('click',()=>openEventDetail(busanEvents[Number(button.dataset.eventIndex)])));}
+document.querySelector('#closeEventDetail').addEventListener('click',closeEventDetail);
 function setInfoTab(tab){const weather=tab==='weather';document.querySelector('#weatherPanel').hidden=!weather;document.querySelector('#eventsPanel').hidden=weather;document.querySelectorAll('.info-tabs [data-info-tab]').forEach(button=>button.classList.toggle('active',button.dataset.infoTab===tab));if(weather)loadBusanWeather();}
 document.querySelectorAll('[data-info-tab]').forEach(button=>button.addEventListener('click',()=>setInfoTab(button.dataset.infoTab)));
 renderEvents();loadBusanWeather();
