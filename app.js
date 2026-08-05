@@ -198,6 +198,8 @@ document.querySelector('#detailCourseButton').addEventListener('click',()=>{if(a
 document.querySelector('#featuredRecommendation').addEventListener('click',event=>{if(!event.target.closest('button'))openSpotDetail(touristSpots.find(spot=>spot.id===event.currentTarget.dataset.spotId));});
 
 var crowdMap, spotMarkers=[], routeLine, routeStopMarkers=[];
+let selectedTransport='walk';
+const transportOptions={walk:{label:'도보',color:'#0a9680',dash:'7 9'},car:{label:'자동차',color:'#0878cf',dash:null},transit:{label:'버스·지하철',color:'#7357c9',dash:'14 7'},train:{label:'기차',color:'#e06452',dash:'3 8'}};
 let focusedSpot=touristSpots.find(spot=>spot.name==='해운대해수욕장')||touristSpots[0];
 const crowdLevel=value=>value>=70?'high':value>=40?'medium':'low';
 const crowdText=value=>value>=70?'혼잡':value>=40?'보통':'여유';
@@ -209,13 +211,15 @@ function updateMapRoute(fit=false){
  if(!crowdMap||!window.L)return;
  if(routeLine){crowdMap.removeLayer(routeLine);routeLine=null;}
  routeStopMarkers.forEach(marker=>crowdMap.removeLayer(marker));routeStopMarkers=[];
- const stops=getCurrentRouteStops().map(stop=>touristSpots.find(spot=>spot.name===stop[0])).filter(Boolean);
+ const requestedStops=getCurrentRouteStops();
+ const stops=requestedStops.map(stop=>touristSpots.find(spot=>spot.name===stop[0])).filter(Boolean);
  const summary=document.querySelector('#routeMapSummary');
- if(stops.length<2){summary.textContent='선택한 코스의 지도 좌표를 준비 중이에요.';return;}
+ if(stops.length<2||stops.length!==requestedStops.length){summary.textContent='정보를 제공할 수 없습니다. 선택한 코스의 일부 명소 지도 좌표가 없어요.';return;}
  const points=stops.map(spot=>[spot.lat,spot.lng]);
- routeLine=L.polyline(points,{color:'#0a95ba',weight:5,opacity:.88,lineCap:'round',dashArray:'8 7'}).addTo(crowdMap);
+ const transport=transportOptions[selectedTransport];
+ routeLine=L.polyline(points,{color:transport.color,weight:7,opacity:.95,lineCap:'round',lineJoin:'round',dashArray:transport.dash}).addTo(crowdMap);routeLine.bringToFront();
  routeStopMarkers=stops.map((spot,index)=>L.marker([spot.lat,spot.lng],{icon:L.divIcon({className:'',html:`<span class="route-stop-marker ${index===0?'start':''}">${index+1}</span>`,iconSize:[25,25],iconAnchor:[12,12]})}).addTo(crowdMap).bindTooltip(`${index+1}. ${spot.name}`,{direction:'top',offset:[0,-12]}));
- summary.textContent=`${routeRegions[selectedRegion].label} · ${durationPlans[selectedDuration].label} 코스 ${stops.length}곳을 번호와 선으로 표시했어요.`;
+ summary.textContent=`${transport.label} · ${routeRegions[selectedRegion].label} 코스 ${stops.length}곳을 번호와 예상 이동선으로 표시했어요.`;
  if(fit)crowdMap.fitBounds(routeLine.getBounds(),{padding:[32,32],maxZoom:13});
 }
 function updateDashboard(){const average=Math.round(touristSpots.reduce((sum,spot)=>sum+spot.crowd,0)/touristSpots.length);document.querySelector('#averageDensity').innerHTML=`${average}<span>%</span>`;renderRecommendations(selectedFilter);renderFeaturedRecommendation();renderEquitySpotlight();renderCourse();renderNotifications();updateFocusedSpot();if(!document.querySelector('#searchPanel').hidden)renderSearch();}
@@ -223,6 +227,7 @@ function applyDemoCrowdVariation(){const phase=Math.floor(Date.now()/30000);tour
 function startBusanMap(){if(!window.L)return;crowdMap=L.map('busanMap',{zoomControl:false,attributionControl:true}).setView([35.165,129.065],11);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(crowdMap);L.control.zoom({position:'bottomright'}).addTo(crowdMap);spotMarkers=touristSpots.map(spot=>{const marker=L.marker([spot.lat,spot.lng]).addTo(crowdMap);marker.on('click',()=>openSpot(spot));return{spot,marker};});updateMapPins();updateMapRoute();}
 async function refreshCrowdData(){let usesLiveApi=false;try{const response=await fetch('/api/crowd');if(!response.ok)throw new Error('fallback');const payload=await response.json();const incoming=new Map(payload.places.map(item=>[item.id,item.crowd]));touristSpots.forEach(spot=>{if(incoming.has(spot.id))spot.crowd=incoming.get(spot.id);});usesLiveApi=true;}catch{applyDemoCrowdVariation();}updateMapPins();updateDashboard();const current=new Date();const label=`${String(current.getHours()).padStart(2,'0')}:${String(current.getMinutes()).padStart(2,'0')} 갱신`;document.querySelector('#syncTime').textContent=label;document.querySelector('#updatedAt').textContent=`${label} · ${usesLiveApi?'실시간 데이터':'시연 데이터'}`;}
 startBusanMap();
+document.querySelectorAll('#transportModes button').forEach(button=>button.addEventListener('click',()=>{selectedTransport=button.dataset.transport;document.querySelectorAll('#transportModes button').forEach(item=>item.classList.toggle('active',item===button));updateMapRoute(true);}));
 refreshCrowdData();
 setInterval(refreshCrowdData,30000);
 
