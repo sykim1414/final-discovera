@@ -102,8 +102,8 @@
     <section class="page" id="map">
       <div class="page-heading"><p class="eyebrow">LIVE BUSAN</p><h1>실시간 혼잡도 지도</h1><p>관광지별 현재 밀집도를 확인해보세요.</p></div>
       <div class="map-card real-map"><div id="busanMap" aria-label="부산 관광지 실시간 혼잡도 지도"></div></div>
-      <div class="legend"><span><i class="dot low"></i> 여유</span><span><i class="dot med"></i> 보통</span><span><i class="dot high"></i> 혼잡</span></div><div class="route-map-summary" id="routeMapSummary">AI 추천 코스 동선을 지도에서 확인하세요.</div>
-      <section class="live-sheet"><div class="handle"></div><div class="live-head"><p class="eyebrow">AI LIVE ANALYSIS</p><span class="sync"><i></i> <span id="syncTime">10:42 갱신</span></span></div><h2 id="placeTitle">해운대해수욕장</h2><div class="live-grid"><div><span>현재 혼잡도</span><b id="placeDensity">82% <em>혼잡</em></b></div><div><span>AI 대체 추천</span><b id="placeAlt">청사포 · 19%</b></div></div><div class="transport-picker" aria-label="코스 이동수단"><span>코스 이동수단</span><div id="transportModes"><button class="active" data-transport="car">자동차</button></div></div><div class="source-line">분석 기준 · 익명 유동인구 · 교통/주차 · 날씨/행사</div><button class="primary" data-go="recommend">덜 붐비는 곳 추천받기</button></section>
+      <div class="legend"><span><i class="dot low"></i> 여유</span><span><i class="dot med"></i> 보통</span><span><i class="dot high"></i> 혼잡</span></div>
+      <section class="live-sheet"><div class="handle"></div><div class="live-head"><p class="eyebrow">AI LIVE ANALYSIS</p><span class="sync"><i></i> <span id="syncTime">10:42 갱신</span></span></div><h2 id="placeTitle">해운대해수욕장</h2><div class="live-grid"><div><span>현재 혼잡도</span><b id="placeDensity">82% <em>혼잡</em></b></div><div><span>AI 대체 추천</span><b id="placeAlt">청사포 · 19%</b></div></div><div class="source-line">분석 기준 · 익명 유동인구 · 교통/주차 · 날씨/행사</div><button class="primary" data-go="recommend">덜 붐비는 곳 추천받기</button></section>
     </section>
 
     <section class="page" id="recommend">
@@ -121,6 +121,7 @@
         <button class="active" data-region="oldtown">원도심</button><button data-region="west">서부·사하</button><button data-region="yeongdo">영도</button><button data-region="urban">도심·온천</button><button data-region="south">남부·수영</button><button data-region="river">낙동강</button><button data-region="east">동부권</button>
       </div>
       <p class="course-guide">기간과 권역을 바꾸면 AI가 다른 명소와 동선을 제안해요.</p>
+      <section class="course-map-section" aria-labelledby="courseMapTitle"><div class="course-map-head"><div><p class="eyebrow">COURSE ROUTE MAP</p><h2 id="courseMapTitle">코스 경로 지도</h2></div><span>자동차 도로 기준</span></div><div class="course-map-card"><div id="courseMap" aria-label="선택한 관광 코스 경로 지도"></div></div><p class="route-map-summary" id="courseRouteSummary">선택한 코스의 실제 도로 경로를 불러오고 있어요.</p></section>
       <article class="course-card" id="courseCard"></article>
     </section>
 
@@ -143,6 +144,7 @@
       <div class="page-heading compact"><p class="eyebrow">MY TRAVEL ARCHIVE</p><h1>나의 여행 기록</h1><p>내가 발견한 부산의 명소와 코스를 계정별로 모아봐요.</p></div>
       <section class="history-profile"><span>✦</span><div><small>DISCOVERA TRAVELER</small><b id="historyMemberName">여행자님의 부산 기록</b><p id="historyMemberEmail"></p></div></section>
       <div class="history-summary" id="historySummary"></div>
+      <section class="history-collection" id="historyCollection" hidden></section>
       <div class="history-section-head"><h2>여행 타임라인</h2><small>최신 기록순</small></div>
       <div class="history-timeline" id="historyTimeline"></div>
     </section>
@@ -182,6 +184,6 @@
   </section>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=20260805-travel-history"></script>
+<script src="app.js?v=20260805-saved-courses"></script>
 </body>
 </html>
