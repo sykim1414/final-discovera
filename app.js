@@ -4,8 +4,12 @@ const realtimeNow=new Date();
 const realtimeText=`${String(realtimeNow.getHours()).padStart(2,'0')}:${String(realtimeNow.getMinutes()).padStart(2,'0')} 갱신`;
 document.querySelector('#syncTime').textContent=realtimeText;
 document.querySelector('#updatedAt').textContent=`${realtimeText} · 데모 데이터`;
+document.querySelector('.topbar-actions').insertAdjacentHTML('afterbegin','<button class="favorite-trigger" id="favoriteButton" type="button" aria-label="찜 목록 열기">♡<i id="favoriteBadge"></i></button>');
+document.querySelector('.bottom-nav').insertAdjacentHTML('beforebegin','<section class="page" id="favorites"><div class="page-heading compact"><p class="eyebrow">MY FAVORITES</p><h1>나의 찜 목록</h1><p>관심 있는 부산 명소를 한곳에 모아 바로 확인하세요.</p></div><div class="favorite-summary"><span>브라우저에 안전하게 저장돼요.</span><b id="favoriteCount">0곳</b></div><div id="favoriteList"></div></section>');
+document.querySelector('.detail-actions').classList.add('has-favorite');
+document.querySelector('.detail-actions').insertAdjacentHTML('afterbegin','<button class="outline detail-favorite" id="detailFavoriteButton" type="button">♡ 찜하기</button>');
 const pages=document.querySelectorAll('.page'),navs=document.querySelectorAll('.nav'),toast=document.querySelector('.toast');
-function move(id){pages.forEach(p=>p.classList.toggle('active',p.id===id));navs.forEach(n=>n.classList.toggle('active',n.dataset.go===id));document.querySelector('.app-shell').scrollTop=0;if(id==='map'&&crowdMap)setTimeout(()=>crowdMap.invalidateSize(),0);}
+function move(id){pages.forEach(p=>p.classList.toggle('active',p.id===id));navs.forEach(n=>n.classList.toggle('active',n.dataset.go===id));document.querySelector('.app-shell').scrollTop=0;if(id==='map'&&crowdMap)setTimeout(()=>crowdMap.invalidateSize(),0);if(id==='favorites')renderFavorites();}
 document.querySelectorAll('[data-go]').forEach(button=>button.addEventListener('click',()=>move(button.dataset.go)));
 const weatherCodes={0:['맑음','☀'],1:['대체로 맑음','🌤'],2:['구름 조금','⛅'],3:['흐림','☁'],45:['안개','🌫'],48:['안개','🌫'],51:['약한 이슬비','🌦'],53:['이슬비','🌦'],55:['강한 이슬비','🌧'],61:['약한 비','🌦'],63:['비','🌧'],65:['강한 비','🌧'],71:['약한 눈','🌨'],73:['눈','🌨'],75:['강한 눈','❄'],80:['소나기','🌦'],81:['소나기','🌧'],82:['강한 소나기','⛈'],95:['뇌우','⛈'],96:['우박·뇌우','⛈'],99:['강한 우박·뇌우','⛈']};
 const busanEvents=[
@@ -97,11 +101,33 @@ const travelPurposes={nature:{label:'바다·자연 산책',theme:'자연·산�
 let travelPurpose=travelPurposes[localStorage.getItem(purposeStoreKey)]||travelPurposes.balance;
 const purposeMatch=spot=>travelPurpose.theme===spot.theme?1:0;
 const equityFirst=(a,b)=>(Number(isEquitySpot(b))-Number(isEquitySpot(a)))||(purposeMatch(b)-purposeMatch(a))||(a.crowd-b.crowd);
+const favoriteStoreKey='discovera-favorites-v1';
+const loadFavorites=()=>{try{const saved=JSON.parse(localStorage.getItem(favoriteStoreKey)||'[]');return new Set(Array.isArray(saved)?saved:[]);}catch{return new Set();}};
+let favoriteSpots=loadFavorites();
+const isFavorite=spot=>favoriteSpots.has(spot.id);
+const saveFavorites=()=>localStorage.setItem(favoriteStoreKey,JSON.stringify([...favoriteSpots]));
+function syncFavoriteUi(){
+ const badge=document.querySelector('#favoriteBadge');badge.textContent=favoriteSpots.size?String(favoriteSpots.size):'';
+ const featured=touristSpots.find(spot=>spot.id===document.querySelector('#featuredRecommendation').dataset.spotId),heart=document.querySelector('#featuredRecommendation .heart');
+ if(featured){heart.textContent=isFavorite(featured)?'♥':'♡';heart.classList.toggle('active',isFavorite(featured));heart.setAttribute('aria-label',isFavorite(featured)?`${featured.name} 찜 해제`:`${featured.name} 찜하기`);}
+ const detailButton=document.querySelector('#detailFavoriteButton');
+ if(activeDetailSpot){detailButton.textContent=isFavorite(activeDetailSpot)?'♥ 찜 해제':'♡ 찜하기';detailButton.classList.toggle('active',isFavorite(activeDetailSpot));}
+}
+function toggleFavorite(spot){
+ if(!spot)return;const removing=isFavorite(spot);removing?favoriteSpots.delete(spot.id):favoriteSpots.add(spot.id);saveFavorites();syncFavoriteUi();renderRecommendations(selectedFilter);renderFavorites();showToast(removing?`${spot.name}을(를) 찜 목록에서 뺐어요.`:`${spot.name}을(를) 찜 목록에 저장했어요.`);
+}
+function renderFavorites(){
+ const container=document.querySelector('#favoriteList'),spots=touristSpots.filter(isFavorite);
+ document.querySelector('#favoriteCount').textContent=`${spots.length}곳`;
+ if(!spots.length){container.innerHTML='<div class="favorite-empty"><span>♡</span><h2>아직 찜한 명소가 없어요</h2><p>AI 추천에서 하트를 누르면<br>관심 명소가 여기에 저장돼요.</p><button class="primary" data-open-recommend>AI 추천 둘러보기</button></div>';container.querySelector('[data-open-recommend]').addEventListener('click',()=>move('recommend'));return;}
+ container.innerHTML=`<div class="favorite-list">${spots.map(spot=>`<article class="favorite-list-card" data-favorite-list-id="${spot.id}" role="button" tabindex="0"><img src="${spotImages[spot.name]||''}" alt="${spot.name}"><span><b>${spot.name}</b><small>${spot.district} · ${spot.theme}</small><em>현재 혼잡도 ${spot.crowd}% · ${crowdText(spot.crowd)}</em></span><button class="favorite-remove" type="button" aria-label="${spot.name} 찜 해제">♥</button></article>`).join('')}</div>`;
+ container.querySelectorAll('.favorite-list-card').forEach(card=>{const spot=touristSpots.find(item=>item.id===card.dataset.favoriteListId);card.addEventListener('click',event=>{if(event.target.closest('.favorite-remove')){event.stopPropagation();toggleFavorite(spot);return;}openSpotDetail(spot);});card.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!event.target.closest('button')){event.preventDefault();openSpotDetail(spot);}});});
+}
 function renderRecommendations(filter='전체'){
  const visible=(filter==='전체'?touristSpots:touristSpots.filter(spot=>spot.theme===filter)).slice().sort(equityFirst);
  document.querySelector('#recommendTitle').textContent=filter==='전체'?`지역 균형을 위한 부산 명소 ${visible.length}곳`:`${filter} 명소 · 지역 균형 우선 추천`;
- cards.innerHTML=visible.map(spot=>{const image=spotImages[spot.name];const level=spot.crowd>=70?'high':spot.crowd>=40?'medium':'low';return `<article class="mini-card spot-card" data-spot-id="${spot.id}" role="button" tabindex="0" aria-label="${spot.name} 상세 정보 보기"><div class="mini-art ${level}">${image?`<img src="${image}" alt="${spot.name}">`:`<span>${spot.theme==='자연·산책'?'♧':spot.theme==='문화·전시'?'⌂':'✦'}</span>`}</div><div class="spot-meta"><b>${spot.name}</b><p>${spot.district} · 혼잡도 <strong class="${level}">${spot.crowd}%</strong></p><small>${spot.theme}</small></div></article>`;}).join('');
- cards.querySelectorAll('.spot-card').forEach(card=>{const spot=touristSpots.find(item=>item.id===card.dataset.spotId);card.addEventListener('click',()=>openSpotDetail(spot));card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openSpotDetail(spot);}});});
+ cards.innerHTML=visible.map(spot=>{const image=spotImages[spot.name];const level=spot.crowd>=70?'high':spot.crowd>=40?'medium':'low';return `<article class="mini-card spot-card" data-spot-id="${spot.id}" role="button" tabindex="0" aria-label="${spot.name} 상세 정보 보기"><button class="favorite-card ${isFavorite(spot)?'active':''}" type="button" aria-label="${isFavorite(spot)?`${spot.name} 찜 해제`:`${spot.name} 찜하기`}">${isFavorite(spot)?'♥':'♡'}</button><div class="mini-art ${level}">${image?`<img src="${image}" alt="${spot.name}">`:`<span>${spot.theme==='자연·산책'?'♧':spot.theme==='문화·전시'?'⌂':'✦'}</span>`}</div><div class="spot-meta"><b>${spot.name}</b><p>${spot.district} · 혼잡도 <strong class="${level}">${spot.crowd}%</strong></p><small>${spot.theme}</small></div></article>`;}).join('');
+ cards.querySelectorAll('.spot-card').forEach(card=>{const spot=touristSpots.find(item=>item.id===card.dataset.spotId);card.querySelector('.favorite-card').addEventListener('click',event=>{event.stopPropagation();toggleFavorite(spot);});card.addEventListener('click',()=>openSpotDetail(spot));card.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!event.target.closest('button')){event.preventDefault();openSpotDetail(spot);}});});
 }
 function renderEquitySpotlight(){
  const picks=touristSpots.filter(isEquitySpot).slice().sort((a,b)=>(purposeMatch(b)-purposeMatch(a))||(a.crowd-b.crowd)).slice(0,3);
@@ -122,6 +148,7 @@ function renderFeaturedRecommendation(){
  document.querySelector('#featuredImage').alt=`${pick.name} 풍경`;
  document.querySelector('.course-btn').dataset.course=pick.name;
  document.querySelector('#featuredRecommendation').dataset.spotId=pick.id;
+ const heart=document.querySelector('#featuredRecommendation .heart');heart.textContent=isFavorite(pick)?'♥':'♡';heart.classList.toggle('active',isFavorite(pick));heart.setAttribute('aria-label',isFavorite(pick)?`${pick.name} 찜 해제`:`${pick.name} 찜하기`);
 }
 renderRecommendations();
 renderEquitySpotlight();
@@ -228,6 +255,7 @@ function openSpotDetail(spot){
  document.querySelector('#detailTheme').textContent=`#${spot.theme}`;
  document.querySelector('#detailReason').textContent=spot.crowd<40?'#지금_여유로움':'#혼잡도_확인_추천';
  document.querySelector('#aiReasonList').innerHTML=getAiReasons(spot).map(reason=>`<li>${reason}</li>`).join('');
+ syncFavoriteUi();
  panel.hidden=false;
 }
 function closeSpotDetail(){document.querySelector('#spotDetailPanel').hidden=true;}
@@ -235,6 +263,10 @@ document.querySelector('#closeSpotDetail').addEventListener('click',closeSpotDet
 document.querySelector('#detailMapButton').addEventListener('click',()=>{if(activeDetailSpot){closeSpotDetail();move('map');openSpot(activeDetailSpot);crowdMap&&crowdMap.setView([activeDetailSpot.lat,activeDetailSpot.lng],14);}});
 document.querySelector('#detailCourseButton').addEventListener('click',()=>{if(activeDetailSpot){closeSpotDetail();createCourseForSpot(activeDetailSpot);showToast(`${activeDetailSpot.name}을(를) 포함한 코스를 만들었어요.`);}});
 document.querySelector('#featuredRecommendation').addEventListener('click',event=>{if(!event.target.closest('button'))openSpotDetail(touristSpots.find(spot=>spot.id===event.currentTarget.dataset.spotId));});
+document.querySelector('#featuredRecommendation .heart').addEventListener('click',event=>{event.stopPropagation();toggleFavorite(touristSpots.find(spot=>spot.id===document.querySelector('#featuredRecommendation').dataset.spotId));});
+document.querySelector('#detailFavoriteButton').addEventListener('click',()=>toggleFavorite(activeDetailSpot));
+document.querySelector('#favoriteButton').addEventListener('click',()=>move('favorites'));
+syncFavoriteUi();renderFavorites();
 
 var crowdMap, spotMarkers=[], routeLine, routeStopMarkers=[], routeRequestId=0;
 let selectedTransport='car';
@@ -274,7 +306,7 @@ async function updateMapRoute(fit=false){
  summary.textContent=`자동차 · ${routeRegions[selectedRegion].label} 코스 ${stops.length}곳을 실제 도로 경로로 표시했어요.`;
  if(fit)crowdMap.fitBounds(routeLine.getBounds(),{padding:[32,32],maxZoom:13});
 }
-function updateDashboard(){const average=Math.round(touristSpots.reduce((sum,spot)=>sum+spot.crowd,0)/touristSpots.length);document.querySelector('#averageDensity').innerHTML=`${average}<span>%</span>`;renderRecommendations(selectedFilter);renderFeaturedRecommendation();renderEquitySpotlight();renderCourse();renderNotifications();updateFocusedSpot();if(!document.querySelector('#searchPanel').hidden)renderSearch();}
+function updateDashboard(){const average=Math.round(touristSpots.reduce((sum,spot)=>sum+spot.crowd,0)/touristSpots.length);document.querySelector('#averageDensity').innerHTML=`${average}<span>%</span>`;renderRecommendations(selectedFilter);renderFeaturedRecommendation();renderEquitySpotlight();renderCourse();renderNotifications();renderFavorites();updateFocusedSpot();if(!document.querySelector('#searchPanel').hidden)renderSearch();}
 function applyDemoCrowdVariation(){const phase=Math.floor(Date.now()/30000);touristSpots.forEach((spot,index)=>{const wave=Math.sin((phase+index*3)*0.86)*13+Math.cos((phase+index)*0.41)*6;spot.crowd=Math.round(clamp(spot.baseCrowd+wave,8,92));});}
 function startBusanMap(){if(!window.L)return;crowdMap=L.map('busanMap',{zoomControl:false,attributionControl:true}).setView([35.165,129.065],11);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(crowdMap);L.control.zoom({position:'bottomright'}).addTo(crowdMap);spotMarkers=touristSpots.map(spot=>{const marker=L.marker([spot.lat,spot.lng]).addTo(crowdMap);marker.on('click',()=>openSpot(spot));return{spot,marker};});updateMapPins();updateMapRoute();}
 async function refreshCrowdData(){let usesLiveApi=false;try{const response=await fetch('/api/crowd');if(!response.ok)throw new Error('fallback');const payload=await response.json();const incoming=new Map(payload.places.map(item=>[item.id,item.crowd]));touristSpots.forEach(spot=>{if(incoming.has(spot.id))spot.crowd=incoming.get(spot.id);});usesLiveApi=true;}catch{applyDemoCrowdVariation();}updateMapPins();updateDashboard();const current=new Date();const label=`${String(current.getHours()).padStart(2,'0')}:${String(current.getMinutes()).padStart(2,'0')} 갱신`;document.querySelector('#syncTime').textContent=label;document.querySelector('#updatedAt').textContent=`${label} · ${usesLiveApi?'실시간 데이터':'시연 데이터'}`;}
