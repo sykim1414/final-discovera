@@ -203,7 +203,7 @@ const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 function updateMapPins(){spotMarkers.forEach(({spot,marker})=>{const level=crowdLevel(spot.crowd);marker.setIcon(L.divIcon({className:'',html:`<div class="crowd-marker ${level}">${spot.crowd}</div>`,iconSize:[34,34],iconAnchor:[17,17]}));marker.bindPopup(`<div class="map-popup"><b>${spot.name}</b><small>${spot.district} · 실시간 분석</small><strong>${spot.crowd}% · ${crowdText(spot.crowd)}</strong></div>`);});}
 function updateFocusedSpot(){document.querySelector('#placeTitle').textContent=focusedSpot.name;document.querySelector('#placeDensity').innerHTML=`${focusedSpot.crowd}% <em>${crowdText(focusedSpot.crowd)}</em>`;const alternative=touristSpots.filter(item=>item.district!==focusedSpot.district).sort((a,b)=>a.crowd-b.crowd)[0];document.querySelector('#placeAlt').textContent=`${alternative.name} · ${alternative.crowd}%`;}
 function openSpot(spot){focusedSpot=spot;updateFocusedSpot();}
-function updateDashboard(){const average=Math.round(touristSpots.reduce((sum,spot)=>sum+spot.crowd,0)/touristSpots.length);document.querySelector('#averageDensity').innerHTML=`${average}<span>%</span>`;renderRecommendations(selectedFilter);renderFeaturedRecommendation();renderEquitySpotlight();renderCourse();renderNotifications();updateFocusedSpot();}
+function updateDashboard(){const average=Math.round(touristSpots.reduce((sum,spot)=>sum+spot.crowd,0)/touristSpots.length);document.querySelector('#averageDensity').innerHTML=`${average}<span>%</span>`;renderRecommendations(selectedFilter);renderFeaturedRecommendation();renderEquitySpotlight();renderCourse();renderNotifications();updateFocusedSpot();if(!document.querySelector('#searchPanel').hidden)renderSearch();}
 function applyDemoCrowdVariation(){const phase=Math.floor(Date.now()/30000);touristSpots.forEach((spot,index)=>{const wave=Math.sin((phase+index*3)*0.86)*13+Math.cos((phase+index)*0.41)*6;spot.crowd=Math.round(clamp(spot.baseCrowd+wave,8,92));});}
 function startBusanMap(){if(!window.L)return;crowdMap=L.map('busanMap',{zoomControl:false,attributionControl:true}).setView([35.165,129.065],11);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(crowdMap);L.control.zoom({position:'bottomright'}).addTo(crowdMap);spotMarkers=touristSpots.map(spot=>{const marker=L.marker([spot.lat,spot.lng]).addTo(crowdMap);marker.on('click',()=>openSpot(spot));return{spot,marker};});updateMapPins();}
 async function refreshCrowdData(){let usesLiveApi=false;try{const response=await fetch('/api/crowd');if(!response.ok)throw new Error('fallback');const payload=await response.json();const incoming=new Map(payload.places.map(item=>[item.id,item.crowd]));touristSpots.forEach(spot=>{if(incoming.has(spot.id))spot.crowd=incoming.get(spot.id);});usesLiveApi=true;}catch{applyDemoCrowdVariation();}updateMapPins();updateDashboard();const current=new Date();const label=`${String(current.getHours()).padStart(2,'0')}:${String(current.getMinutes()).padStart(2,'0')} 갱신`;document.querySelector('#syncTime').textContent=label;document.querySelector('#updatedAt').textContent=`${label} · ${usesLiveApi?'실시간 데이터':'시연 데이터'}`;}
@@ -290,3 +290,19 @@ document.querySelector('#purposeLater').addEventListener('click',()=>{purposeMod
 document.querySelector('#purposeBackdrop').addEventListener('click',()=>{purposeModal.hidden=true;});
 syncPurposeUi();
 if(!localStorage.getItem(purposeStoreKey)&&!sessionStorage.getItem('discovera-purpose-later'))setTimeout(openPurpose,450);
+
+const searchPanel=document.querySelector('#searchPanel');
+const spotSearchInput=document.querySelector('#spotSearchInput');
+const searchResults=document.querySelector('#searchResults');
+const searchStatus=document.querySelector('#searchStatus');
+function renderSearch(){
+ const query=spotSearchInput.value.trim().toLowerCase();
+ const results=touristSpots.filter(spot=>`${spot.name} ${spot.district} ${spot.theme}`.toLowerCase().includes(query)).sort(equityFirst);
+ searchStatus.textContent=query?`‘${spotSearchInput.value.trim()}’ 검색 결과 ${results.length}곳 · 혼잡도는 30초마다 갱신돼요.`:'32개 명소의 현재 혼잡도를 확인할 수 있어요.';
+ searchResults.innerHTML=results.length?results.map(spot=>{const level=spot.crowd>=70?'high':spot.crowd>=40?'medium':'';return `<button class="search-result" type="button" data-search-id="${spot.id}"><img src="${spotImages[spot.name]||''}" alt=""><span><b>${spot.name}</b><small>${spot.district} · ${spot.theme}</small></span><em class="${level}">혼잡도 ${spot.crowd}%</em></button>`;}).join(''):'<p class="search-empty">검색 결과가 없어요.<br>다른 명소명이나 지역명으로 찾아보세요.</p>';
+ searchResults.querySelectorAll('.search-result').forEach(button=>button.addEventListener('click',()=>{const spot=touristSpots.find(item=>item.id===button.dataset.searchId);searchPanel.hidden=true;openSpotDetail(spot);}));
+}
+function openSearch(){searchPanel.hidden=false;renderSearch();setTimeout(()=>spotSearchInput.focus(),30);}
+document.querySelector('#searchButton').addEventListener('click',openSearch);
+document.querySelector('#closeSearch').addEventListener('click',()=>{searchPanel.hidden=true;spotSearchInput.value='';});
+spotSearchInput.addEventListener('input',renderSearch);
