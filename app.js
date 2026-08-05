@@ -64,7 +64,11 @@ const spotImages={
 touristSpots.forEach(spot=>{spot.theme=spotThemes[spot.name];spot.baseCrowd=spot.crowd;});
 const equityDistricts=new Set(['강서구','사상구','북구','사하구']);
 const isEquitySpot=spot=>equityDistricts.has(spot.district);
-const equityFirst=(a,b)=>(Number(isEquitySpot(b))-Number(isEquitySpot(a)))||(a.crowd-b.crowd);
+const purposeStoreKey='discovera-travel-purpose-v1';
+const travelPurposes={nature:{label:'바다·자연 산책',theme:'자연·산책'},culture:{label:'역사·문화 탐방',theme:'문화·전시'},food:{label:'맛집·시장 여행',theme:'맛집·시장'},balance:{label:'숨은 지역 발견',theme:null}};
+let travelPurpose=travelPurposes[localStorage.getItem(purposeStoreKey)]||travelPurposes.balance;
+const purposeMatch=spot=>travelPurpose.theme===spot.theme?1:0;
+const equityFirst=(a,b)=>(Number(isEquitySpot(b))-Number(isEquitySpot(a)))||(purposeMatch(b)-purposeMatch(a))||(a.crowd-b.crowd);
 function renderRecommendations(filter='전체'){
  const visible=(filter==='전체'?touristSpots:touristSpots.filter(spot=>spot.theme===filter)).slice().sort(equityFirst);
  document.querySelector('#recommendTitle').textContent=filter==='전체'?`지역 균형을 위한 부산 명소 ${visible.length}곳`:`${filter} 명소 · 지역 균형 우선 추천`;
@@ -72,13 +76,13 @@ function renderRecommendations(filter='전체'){
  cards.querySelectorAll('.spot-card').forEach(card=>{const spot=touristSpots.find(item=>item.id===card.dataset.spotId);card.addEventListener('click',()=>openSpotDetail(spot));card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openSpotDetail(spot);}});});
 }
 function renderEquitySpotlight(){
- const picks=touristSpots.filter(isEquitySpot).slice().sort((a,b)=>a.crowd-b.crowd).slice(0,3);
+ const picks=touristSpots.filter(isEquitySpot).slice().sort((a,b)=>(purposeMatch(b)-purposeMatch(a))||(a.crowd-b.crowd)).slice(0,3);
  const list=document.querySelector('#equitySpotList');
  list.innerHTML=picks.map(spot=>`<button class="equity-spot" type="button" data-equity-id="${spot.id}"><img src="${spotImages[spot.name]||''}" alt=""><span><b>${spot.name}</b><small>${spot.district} · 지역 상권 연결 추천</small></span><em class="equity-badge ${spot.crowd>=40?'medium':''}">혼잡도 ${spot.crowd}%</em></button>`).join('');
  list.querySelectorAll('.equity-spot').forEach(button=>button.addEventListener('click',()=>openSpotDetail(touristSpots.find(spot=>spot.id===button.dataset.equityId))));
 }
 function renderFeaturedRecommendation(){
- const pick=touristSpots.filter(isEquitySpot).slice().sort((a,b)=>a.crowd-b.crowd)[0]||[...touristSpots].sort((a,b)=>a.crowd-b.crowd)[0];
+ const pick=touristSpots.filter(isEquitySpot).slice().sort((a,b)=>(purposeMatch(b)-purposeMatch(a))||(a.crowd-b.crowd))[0]||[...touristSpots].sort((a,b)=>a.crowd-b.crowd)[0];
  const image=spotImages[pick.name];
  const crowd=document.querySelector('#featuredCrowd');
  crowd.textContent=`혼잡도 ${pick.crowd}% · ${pick.crowd>=70?'혼잡':pick.crowd>=40?'보통':'여유'}`;
@@ -165,10 +169,10 @@ function getAiReasons(spot){
  const benchmark=touristSpots.find(item=>item.name==='해운대해수욕장')||{crowd:80};
  const difference=benchmark.crowd-spot.crowd;
  const crowdReason=difference>0?`해운대보다 혼잡도 ${difference}% 낮음`:`현재 해운대와 혼잡도 ${Math.abs(difference)}% 차이`;
- const match=Math.min(97,82+((spot.id.split('-')[1]*7)%15));
+ const match=travelPurpose.theme===spot.theme?Math.min(97,88+((spot.id.split('-')[1]*5)%10)):Math.min(84,70+((spot.id.split('-')[1]*5)%15));
  const travel=18+((spot.id.split('-')[1]*5)%19);
  const stores=4+((spot.id.split('-')[1]*3)%8);
- return [crowdReason,`선택한 ‘${preferenceLabels[spot.theme]}’ 취향과 ${match}% 일치`,`대중교통 예상 이동 ${travel}분`,`주변 지역 상점 ${stores}곳에서 할인 가능`];
+ return [crowdReason,`선택한 ‘${travelPurpose.label}’ 목적과 ${match}% 일치`,`대중교통 예상 이동 ${travel}분`,`주변 지역 상점 ${stores}곳에서 할인 가능`];
 }
 let activeDetailSpot=null;
 function openSpotDetail(spot){
@@ -263,3 +267,26 @@ authForm.addEventListener('submit',event=>{
 });
 document.querySelector('#logoutButton').addEventListener('click',()=>{localStorage.removeItem(authSessionKey);authMode='login';renderAuth();closeAuth();showToast('로그아웃되었습니다.');});
 renderAuth();
+
+const purposeModal=document.querySelector('#purposeModal');
+const purposeSummary=document.querySelector('#purposeSummary');
+function syncPurposeUi(){
+ purposeSummary.textContent=`‘${travelPurpose.label}’ 목적과 혼잡도, 이동 시간을 반영해 추천해요.`;
+ document.querySelectorAll('.purpose-change').forEach(button=>button.textContent=`여행 목적 · ${travelPurpose.label}`);
+}
+function openPurpose(){purposeModal.hidden=false;}
+function applyPurpose(key,save=true){
+ travelPurpose=travelPurposes[key]||travelPurposes.balance;
+ if(save)localStorage.setItem(purposeStoreKey,key);
+ const filter=travelPurpose.theme||'전체';
+ selectedFilter=filter;
+ document.querySelectorAll('.filter-row button').forEach(button=>button.classList.toggle('active',button.dataset.filter===filter));
+ syncPurposeUi();renderRecommendations(filter);renderFeaturedRecommendation();renderEquitySpotlight();renderCourse();
+ purposeModal.hidden=true;showToast(`‘${travelPurpose.label}’ 목적에 맞춰 추천을 새로 만들었어요.`);
+}
+document.querySelectorAll('.purpose-change').forEach(button=>button.addEventListener('click',openPurpose));
+document.querySelectorAll('#purposeOptions button').forEach(button=>button.addEventListener('click',()=>applyPurpose(button.dataset.purpose)));
+document.querySelector('#purposeLater').addEventListener('click',()=>{purposeModal.hidden=true;sessionStorage.setItem('discovera-purpose-later','1');});
+document.querySelector('#purposeBackdrop').addEventListener('click',()=>{purposeModal.hidden=true;});
+syncPurposeUi();
+if(!localStorage.getItem(purposeStoreKey)&&!sessionStorage.getItem('discovera-purpose-later'))setTimeout(openPurpose,450);

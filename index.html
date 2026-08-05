@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="spot-detail.css" />
   <link rel="stylesheet" href="auth.css" />
   <link rel="stylesheet" href="equity.css" />
+  <link rel="stylesheet" href="purpose.css" />
 </head>
 <body>
   <main class="app-shell">
@@ -42,6 +43,7 @@
         <h1>오늘, 더 여유로운<br /><strong>부산</strong>을 발견해요</h1>
         <p>AI가 실시간 혼잡도와 취향을 분석해<br />나만의 새로운 여행을 찾아드려요.</p>
         <button class="primary hero-button" data-go="map">지금 혼잡도 확인하기 <span>→</span></button>
+        <button class="purpose-change hero-purpose" id="purposeButton" type="button">여행 목적 설정</button>
         <div class="waves"></div>
       </div>
 
@@ -88,7 +90,7 @@
     </section>
 
     <section class="page" id="recommend">
-      <div class="page-heading compact"><p class="eyebrow">PERSONAL AI PICK</p><h1>나를 위한 부산 여행</h1><p>혼잡도, 취향, 이동 시간을 반영했어요.</p></div>
+      <div class="page-heading compact"><p class="eyebrow">PERSONAL AI PICK</p><h1>나를 위한 부산 여행</h1><p id="purposeSummary">혼잡도, 취향, 이동 시간을 반영했어요.</p><button class="purpose-change" id="purposeButtonRecommend" type="button">여행 목적 설정</button></div>
       <div class="filter-row"><button class="active" data-filter="전체">전체</button><button data-filter="자연·산책">자연·산책</button><button data-filter="문화·전시">문화·전시</button><button data-filter="맛집·시장">맛집·시장</button></div>
       <article class="place-card featured" id="featuredRecommendation"><div class="place-art art-yeongdo"><img id="featuredImage" src="assets/huinnyeoul-cultural-village.jpg" alt="흰여울문화마을 해안 풍경" /></div><div class="place-copy"><div><span class="pill calm" id="featuredCrowd">혼잡도 24% · 여유</span><button class="heart">♡</button></div><h2 id="featuredName">흰여울문화마을</h2><p id="featuredDistrict">영도구 · 바다 산책과 감성 골목</p><div class="tags"><span id="featuredTheme">#문화·전시</span><span>#AI추천</span><span>#로컬여행</span></div><button class="outline course-btn" data-course="흰여울문화마을">이곳으로 코스 만들기 →</button></div></article>
       <h2 class="subheading" id="recommendTitle">지금 가기 좋은 부산 명소 32곳</h2>
@@ -133,8 +135,21 @@
       <p class="auth-note">시연용 계정입니다. 정보는 현재 브라우저에만 저장됩니다.</p>
     </div>
   </section>
+  <section class="purpose-modal" id="purposeModal" aria-labelledby="purposeTitle" hidden>
+    <div class="purpose-backdrop" id="purposeBackdrop"></div>
+    <div class="purpose-dialog" role="dialog" aria-modal="true">
+      <p class="eyebrow">PERSONAL TRAVEL START</p><h2 id="purposeTitle">이번 부산 여행의 목적은 무엇인가요?</h2><p>여행 목적과 혼잡도를 함께 분석해, 덜 알려진 지역의 알맞은 명소를 추천해 드릴게요.</p>
+      <div class="purpose-options" id="purposeOptions">
+        <button type="button" data-purpose="nature"><span>🌿</span><b>바다·자연 산책</b><small>조용한 해안과 생태공원</small></button>
+        <button type="button" data-purpose="culture"><span>🏛️</span><b>역사·문화 탐방</b><small>골목, 전시, 이야기 있는 공간</small></button>
+        <button type="button" data-purpose="food"><span>🍜</span><b>맛집·시장 여행</b><small>로컬 먹거리와 지역 상권</small></button>
+        <button type="button" data-purpose="balance"><span>💚</span><b>숨은 지역 발견</b><small>관광객 분산과 지역 응원</small></button>
+      </div>
+      <button class="purpose-later" id="purposeLater" type="button">나중에 선택할게요</button>
+    </div>
+  </section>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="app.js?v=20260805-local-balance"></script>
+  <script src="app.js?v=20260805-travel-purpose"></script>
 </body>
 </html>
